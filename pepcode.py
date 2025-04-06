@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.stats import entropy
 
 
 AA_LIST = ['A', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'Y']
@@ -23,15 +24,54 @@ def one_hot_code(peptide):
     return pep_oh_encoded
 
     
-def one_hot_decode(one_hot_matr):
+def one_hot_decode(one_hot_matr_input, mode='argmax', entropy_threshold = 1):
     """
-    Return peptide sequence from one-hot representation
+    Return peptide sequence from one-hot representation. 
+    Input matrix should be np array with shape (20(number of aminoacids), length of sequence). Values should be <=1 or it wouldn't convert it to sequence.
+    There are 3 modes to decode matrix to sequence:
+    1) 'armax'(default) - chose maximum value in the column (position in peptide) and assign it to the aminoacid. There is no 'X'(missing) aminoacid in output.
+    2) 'round' - round all values in the matrix to the nearest int (0 or 1). if all values in column =0, then assign this position to 'X'(missing) aminoacid.
+    3) 'entropy' - calculate the Shannon entropy of the column with scipy.stats.entropy() and if it more than entropy_threshold (=1 by default), then assign this position to 'X'(missing) aminoacid. Else find maximum in column to assign it to the aminoacid.
     """
     ans = ""
+    one_hot_matr = one_hot_matr_input.copy()
+    seq_len = one_hot_matr.shape[1]
+    
+    
+    #Convert to 0/1 format
+    if mode == 'argmax':
+        for j in range(seq_len):
+            col_max = np.max(one_hot_matr[:,j])
+            for k in range(len(AA_LIST)):
+                if one_hot_matr[k][j] == col_max:
+                    one_hot_matr[k][j] = 1.0
+                else: 
+                    one_hot_matr[k][j] = 0.0  
+    elif mode == 'round':
+        for j in range(seq_len):
+            for k in range(len(AA_LIST)):
+                one_hot_matr[k][j] = np.round(one_hot_matr[k][j], 0)
+    elif mode == 'entropy':
+        for j in range(seq_len):
+            if entropy(one_hot_matr[:,j]) > entropy_threshold:
+                one_hot_matr[:,j] = 0
+            else:
+                col_max = np.max(one_hot_matr[:,j])
+                for k in range(len(AA_LIST)):
+                    if one_hot_matr[k][j] == col_max:
+                        one_hot_matr[k][j] = 1.0
+                    else: 
+                        one_hot_matr[k][j] = 0.0
+    
+    # Decode to aminoacids
     for i in range(one_hot_matr.shape[1]):
+        flag = 0
         for j in range(len(AA_LIST)):
             if one_hot_matr[j][i] == 1:
                 ans += AA_LIST[j]
+                flag = 1
+        if flag == 0:
+            ans+='X'
     return ans
 
 
