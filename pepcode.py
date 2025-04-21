@@ -2,7 +2,7 @@ import numpy as np
 from scipy.stats import entropy
 
 
-AA_LIST = ['A', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'Y']
+AA_LIST = ['A', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'Y', '-']
 
 
 AA_LIST_atchley_factors = {'A': [np.float64(-0.59145974), np.float64(-1.30209266), np.float64(-0.7330651), np.float64(1.5703918), np.float64(-0.14550842)], 'C': [np.float64(-1.34267179), np.float64(0.465423), np.float64(-0.8620345), np.float64(-1.0200786), np.float64(-0.25516894)], 'D': [np.float64(1.05015062), np.float64(0.30242411), np.float64(-3.6559147), np.float64(-0.2590236), np.float64(-3.24176791)], 'E': [np.float64(1.35733226), np.float64(-1.45275578), np.float64(1.476661), np.float64(0.1129444), np.float64(-0.83715681)], 'F': [np.float64(-1.00610084), np.float64(-0.59046634), np.float64(1.8909687), np.float64(-0.3966186), np.float64(0.41194139)], 'G': [np.float64(-0.38387987), np.float64(1.65201497), np.float64(1.3301017), np.float64(1.0449765), np.float64(2.06385566)], 'H': [np.float64(0.33616543), np.float64(-0.4166278), np.float64(-1.673369), np.float64(-1.4738898), np.float64(-0.07772917)], 'I': [np.float64(-1.23936304), np.float64(-0.54652238), np.float64(2.1314349), np.float64(0.3931618), np.float64(0.81630366)], 'K': [np.float64(1.83146558), np.float64(-0.56109831), np.float64(0.5332237), np.float64(-0.2771101), np.float64(1.64762794)], 'L': [np.float64(-1.01895162), np.float64(-0.98693471), np.float64(-1.5046185), np.float64(1.2658296), np.float64(-0.91181195)], 'M': [np.float64(-0.66312569), np.float64(-1.52353917), np.float64(2.2194787), np.float64(-1.0047207), np.float64(1.21181214)], 'N': [np.float64(0.94535614), np.float64(0.82846219), np.float64(1.2991286), np.float64(-0.1688162), np.float64(0.93339498)], 'P': [np.float64(0.18862522), np.float64(2.08084151), np.float64(-1.6283286), np.float64(0.4207004), np.float64(-1.39177378)], 'Q': [np.float64(0.93056541), np.float64(-0.17926549), np.float64(-3.0048731), np.float64(-0.502591), np.float64(-1.85303476)], 'R': [np.float64(1.53754853), np.float64(-0.05472897), np.float64(1.5021086), np.float64(0.4403185), np.float64(2.89744417)], 'S': [np.float64(-0.22788299), np.float64(1.39869991), np.float64(-4.7596375), np.float64(0.6701745), np.float64(-2.64747356)], 'T': [np.float64(-0.03181782), np.float64(0.32571153), np.float64(2.2134612), np.float64(0.9078985), np.float64(1.31337035)], 'V': [np.float64(-1.33661279), np.float64(-0.27854634), np.float64(-0.5440132), np.float64(1.2419935), np.float64(-1.26225362)], 'W': [np.float64(-0.59533918), np.float64(0.0090776), np.float64(0.6719274), np.float64(-2.1275244), np.float64(-0.18358096)], 'Y': [np.float64(0.25999617), np.float64(0.82992312), np.float64(3.0973596), np.float64(-0.8380164), np.float64(1.51150958)]}
@@ -37,7 +37,7 @@ def one_hot_decode(one_hot_matr_input, mode='argmax', entropy_threshold = 1):
     one_hot_matr = one_hot_matr_input.copy()
     seq_len = one_hot_matr.shape[1]
     
-    
+    # Надо оптимизировать argmax
     #Convert to 0/1 format
     if mode == 'argmax':
         for j in range(seq_len):
@@ -48,9 +48,7 @@ def one_hot_decode(one_hot_matr_input, mode='argmax', entropy_threshold = 1):
                 else: 
                     one_hot_matr[k][j] = 0.0  
     elif mode == 'round':
-        for j in range(seq_len):
-            for k in range(len(AA_LIST)):
-                one_hot_matr[k][j] = np.round(one_hot_matr[k][j], 0)
+        one_hot_matr = np.round(one_hot_matr, 0)
     elif mode == 'entropy':
         for j in range(seq_len):
             if entropy(one_hot_matr[:,j]) > entropy_threshold:
@@ -64,13 +62,14 @@ def one_hot_decode(one_hot_matr_input, mode='argmax', entropy_threshold = 1):
                         one_hot_matr[k][j] = 0.0
     
     # Decode to aminoacids
+    # Надо для раунда что-то придумать. Как контролировать длину.
     for i in range(one_hot_matr.shape[1]):
         flag = 0
         for j in range(len(AA_LIST)):
             if one_hot_matr[j][i] == 1:
                 ans += AA_LIST[j]
                 flag = 1
-        if flag == 0:
+        if flag == 0: # For entropy only
             ans+='X'
     return ans
 
