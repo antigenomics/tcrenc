@@ -17,10 +17,10 @@ def one_hot_code(peptide):
     """ 
     pep_oh_encoded = np.zeros((len(AA_LIST), len(peptide)), dtype = np.float32)
 
-    for i in range(len(peptide)):
-        for j in range(len(AA_LIST)):
-            if AA_LIST[j] == peptide[i]:
-                pep_oh_encoded[j][i] = 1
+    for idx, aa in enumerate(peptide):
+        aa_idx = AA_LIST.index(aa)
+        pep_oh_encoded[aa_idx][idx] = 1
+
     return pep_oh_encoded
 
     
@@ -28,50 +28,27 @@ def one_hot_decode(one_hot_matr_input, mode='argmax', entropy_threshold = 1):
     """
     Return peptide sequence from one-hot representation. 
     Input matrix should be np array with shape (20(number of aminoacids), length of sequence). Values should be <=1 or it wouldn't convert it to sequence.
-    There are 3 modes to decode matrix to sequence:
+    There are 2 modes to decode matrix to sequence:
     1) 'armax'(default) - chose maximum value in the column (position in peptide) and assign it to the aminoacid. There is no 'X'(missing) aminoacid in output.
-    2) 'round' - round all values in the matrix to the nearest int (0 or 1). if all values in column =0, then assign this position to 'X'(missing) aminoacid.
-    3) 'entropy' - calculate the Shannon entropy of the column with scipy.stats.entropy() and if it more than entropy_threshold (=1 by default), then assign this position to 'X'(missing) aminoacid. Else find maximum in column to assign it to the aminoacid.
+    2) 'entropy' - calculate the Shannon entropy of the column with scipy.stats.entropy() and if it more than entropy_threshold (=1 by default), then assign this position to 'X'(missing) aminoacid. Else find maximum in column to assign it to the aminoacid.
     """
     ans = ""
     one_hot_matr = one_hot_matr_input.copy()
     seq_len = one_hot_matr.shape[1]
     
-    # Надо оптимизировать argmax
-    #Convert to 0/1 format
     if mode == 'argmax':
         for j in range(seq_len):
-            col_max = np.max(one_hot_matr[:,j])
-            for k in range(len(AA_LIST)):
-                if one_hot_matr[k][j] == col_max:
-                    one_hot_matr[k][j] = 1.0
-                else: 
-                    one_hot_matr[k][j] = 0.0  
-    elif mode == 'round':
-        one_hot_matr = np.round(one_hot_matr, 0)
+            idx_max = np.argmax(one_hot_matr[:,j])
+            ans += AA_LIST[idx_max]
+        return ans
     elif mode == 'entropy':
         for j in range(seq_len):
             if entropy(one_hot_matr[:,j]) > entropy_threshold:
-                one_hot_matr[:,j] = 0
+                ans += 'X'
             else:
-                col_max = np.max(one_hot_matr[:,j])
-                for k in range(len(AA_LIST)):
-                    if one_hot_matr[k][j] == col_max:
-                        one_hot_matr[k][j] = 1.0
-                    else: 
-                        one_hot_matr[k][j] = 0.0
-    
-    # Decode to aminoacids
-    # Надо для раунда что-то придумать. Как контролировать длину.
-    for i in range(one_hot_matr.shape[1]):
-        flag = 0
-        for j in range(len(AA_LIST)):
-            if one_hot_matr[j][i] == 1:
-                ans += AA_LIST[j]
-                flag = 1
-        if flag == 0: # For entropy only
-            ans+='X'
-    return ans
+                idx_max = np.argmax(one_hot_matr[:,j])
+                ans += AA_LIST[idx_max]
+        return ans
 
 
 def blosum_score(a,b):
