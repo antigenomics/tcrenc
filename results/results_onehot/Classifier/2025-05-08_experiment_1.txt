@@ -1,0 +1,20 @@
+Description:
+Compare classic ML models on full data.
+For model:ab, parametrs: {'model__n_estimators': (10, 50, 100)}
+For model:knn, parametrs: {'model__n_neighbors': (7, 10, 20, 50), 'model__weights': ('uniform', 'distance')}
+For model:dt, parametrs: {'model__max_depth': (5, 10, 20, 50), 'model__min_samples_split': (2, 10, 50)}
+For model:nb, parametrs: {}
+For model:rfc, parametrs: {'model__max_depth': (2, 7, 20), 'model__n_estimators': (50, 200, 400, 700)}
+For model:xgboost, parametrs: {'model__max_depth': (5, 10, 30), 'model__grow_policy': ('depthwise', 'lossguide')}
+Best params for ab:{'model__n_estimators': 50}
+Test ROC AUC for the best model 0.5154194272530283
+Best params for knn:{'model__n_neighbors': 7, 'model__weights': 'distance'}
+Test ROC AUC for the best model 0.6419328636944426
+Best params for dt:{'model__max_depth': 20, 'model__min_samples_split': 50}
+Test ROC AUC for the best model 0.5449206077014079
+Best params for nb:{}
+Test ROC AUC for the best model 0.48444331278446673
+Best params for rfc:{'model__max_depth': 20, 'model__n_estimators': 700}
+Test ROC AUC for the best model 0.6248931245305199
+Best params for xgboost:{'model__grow_policy': 'depthwise', 'model__max_depth': 5}
+Test ROC AUC for the best model 0.5931514478607873
