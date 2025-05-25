@@ -24,7 +24,7 @@ Autoencoders showed very good performance in generating embeddings and reconstru
 ![reconstruction](https://github.com/antigenomics/tcrenc/blob/main/assets/val_onehot.png)
 
 #### Affinity predictor
-The embeddings were used to train affinity predictors. The best model based on robyst scaler, PCA transformation, and SVC achieved an ROC-AUC score of **0.65.**
+The embeddings were used to train affinity predictors. The best model based on robust scaling, PCA transformation, and SVC achieved an ROC-AUC score of **0.65.**
 ![roc](https://github.com/antigenomics/tcrenc/blob/main/assets/roc_onehot.png)
 
 
