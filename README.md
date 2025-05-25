@@ -14,14 +14,17 @@ Weights could be found [here](https://github.com/antigenomics/tcrenc/tree/main/m
 ## Results
 The results are divided into two folders based on representation. See the `results` folder.
 
+### One hot representation
 For the one-hot representation, a comparison of training efficiency was made based on reports generated in the relevant Jupyter notebook (see the `code` folder).
 
 For CDR3, it was shown that single linear transformations (SLT) of the one-hot matrix with a size of (21, 19) (reshaped into a one-dimensional vector) worked well with a latent space size of 64. We also observed that reducing the latent space to a lower dimension, for example, 32, required more complex neural network (NN) architectures, consisting of sequential linear transformations and ReLU activation functions.Two loss functions (MSE and cross-entropy) used in the autoencoder training process for CDR3 sequences were compared. It was demonstrated that the cross-entropy loss function performed approximately 2.5 times better in highly variable positions within CDR3 sequences.
 
+#### VDJdb reconstruction
 Autoencoders showed very good performance in generating embeddings and reconstructing sequences on VDJdb.
 ![reconstruction](https://github.com/antigenomics/tcrenc/blob/main/assets/val_onehot.png)
 
-The embeddings were used to train affinity predictors. The best model based on the one-hot representation achieved an ROC-AUC score of **0.65.**
+#### Affinity predictor
+The embeddings were used to train affinity predictors. The best model based on robyst scaler, PCA transformation, and SVC achieved an ROC-AUC score of **0.65.**
 ![roc](https://github.com/antigenomics/tcrenc/blob/main/assets/roc_onehot.png)
 
 
