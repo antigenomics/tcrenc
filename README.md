@@ -68,9 +68,17 @@ Kidera factors - Kidera factors are a set of ten numerical values that represent
 
 Our neural network model is a convolutional autoencoder that reduces the dimension of the original representation using sequential convolution operations. In this case, 3 convolutional layers and 2 linear layers are used. As a result, we get a latency space with a size of 64. Then, similarly, we can decode this latent space back into our representations. We concatenated the latent spaces obtained from the cdr sequence and epitope and used them to train a fully connected neural network. Also, in the course of this study, we used the Residual Block to possibly solve the problem of gradient attenuation and the fact that layers can interfere with each other, which causes the generalizing ability to decrease. However, this model showed a worse result than a conventional autoencoder.
 
-We got quite good results for a convolutional autoencoder without a Residual Block. The results with the Residual Block are slightly worse.
+We got quite good results for a convolutional autoencoder without a Residual Block. 
 
-We also checked how well the autoencoder captures the sequence structure and individual amino acids. And here he also showed good results.
+![roc-auc-kidera](https://github.com/antigenomics/tcrenc/blob/main/assets/roc-auc_kidera.png)
+
+The results with the Residual Block are slightly worse.
+
+![roc-auc-kidera-residual](https://github.com/antigenomics/tcrenc/blob/main/assets/roc-auc_kidera_resid.png)
+
+We also checked how well the autoencoder captures the sequence structure and individual amino acids. And here it also showed good results.
+
+![error](https://github.com/antigenomics/tcrenc/blob/main/assets/errors_cdr3.png)
 
 ## Requirements and testings
 All requirements could be found in special folder `requirements`. 
