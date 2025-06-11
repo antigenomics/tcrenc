@@ -2,19 +2,26 @@ import numpy as np
 import pandas as pd
 import argparse
 import warnings
+from pathlib import Path
+import sys
 
 # libs for ml
 import torch
 import torch.nn as nn
 
-# my module with some func
-import pepcode
-
 warnings.filterwarnings('ignore')
+current_file_path = Path(__file__).absolute()
+project_root = current_file_path.parent.parent.parent
+sys.path.append(str(project_root))
 
-latent_dims = 64
+# my module with some func
+import modules.modules_onehot.pepcode as pepcode
+from modules.modules_onehot.autoencoder import Autoencoder
+import modules.modules_onehot.constants as constants
+
+
+latent_dims = constants.latent_dims
 batch_size = 400
-learning_rate = 1e-4
 use_gpu = True
 loss_function = nn.CrossEntropyLoss()
 max_cdr3_len = 19
@@ -27,30 +34,6 @@ elif use_gpu and torch.backends.mps.is_available():
     device = torch.device("mps")
 else:
     device = torch.device("cpu")
-
-
-class Autoencoder(nn.Module):
-    def __init__(self, input_dims):
-        super(Autoencoder, self).__init__()
-        self.encoder = nn.Sequential(
-            nn.Linear(in_features=input_dims, out_features=latent_dims),
-        )
-        self.decoder = nn.Sequential(
-            nn.Linear(in_features=latent_dims, out_features=input_dims),
-        )
-
-    def forward(self, x):
-        encoded = self.encoder(x)
-        decoded = self.decoder(encoded)
-        return decoded
-
-    def encoding(self, x):
-        encoded = self.encoder(x)
-        return encoded
-
-    def decoding(self, encoded):
-        decoded = self.decoder(encoded)
-        return decoded
 
 
 def process(input_file: str, output_dir: str) -> None:

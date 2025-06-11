@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.stats import entropy
-import constants
+import modules.modules_onehot.constants as constants
 
 
 AA_LIST = constants.AA_LIST

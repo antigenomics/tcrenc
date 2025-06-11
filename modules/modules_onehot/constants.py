@@ -5,6 +5,9 @@ import numpy as np
 This file contains constants to pepcode.py
 """
 
+latent_dims = 64
+
+
 AA_LIST = ['A', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'Y', '-']
 
 
