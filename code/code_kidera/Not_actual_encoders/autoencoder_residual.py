@@ -1,5 +1,6 @@
-import torch
 import torch.nn as nn
+
+
 class ResidualBlock(nn.Module):
     """
     A basic residual block for 2D convolutional feature maps.
@@ -10,17 +11,19 @@ class ResidualBlock(nn.Module):
     Args:
         channels (int): Number of input and output channels (must match for residual connection).
     """
-    def __init__(self,channels):
+
+    def __init__(self, channels):
         super().__init__()
-        self.block=nn.Sequential(
-            nn.Conv2d(channels,channels,kernel_size=3,padding=1),
+        self.block = nn.Sequential(
+            nn.Conv2d(channels, channels, kernel_size=3, padding=1),
             nn.BatchNorm2d(channels),
             nn.ReLU(),
-            nn.Conv2d(channels,channels,kernel_size=3,padding=1),
-            nn.BatchNorm2d(channels)
+            nn.Conv2d(channels, channels, kernel_size=3, padding=1),
+            nn.BatchNorm2d(channels),
         )
-        self.relu=nn.ReLU()
-    def forward(self,x):
+        self.relu = nn.ReLU()
+
+    def forward(self, x):
         """
         Forward pass through the residual block.
 
@@ -30,7 +33,7 @@ class ResidualBlock(nn.Module):
         Returns:
             Tensor: Output tensor after residual connection and ReLU.
         """
-        return self.relu(x+self.block(x))
+        return self.relu(x + self.block(x))
 
 
 class ConvAutoEncoderRes(nn.Module):
@@ -46,7 +49,7 @@ class ConvAutoEncoderRes(nn.Module):
     representation, and the decoder reconstructs the original tensor with transposed convolutions.
 
     Args:
-        linear (int): The number of amino acids in the  CDR3 sequence.
+        linear (int): The number of amino acids in the CDR3 sequence.
         latent_dim (int, optional): Dimension of the learned latent space. Default: 64.
 
     Input shape:
@@ -58,49 +61,48 @@ class ConvAutoEncoderRes(nn.Module):
     Output shape:
         Same as input.
     """
-    def __init__(self, linear,latent_dim=64):
-        super(ConvAutoEncoderRes, self).__init__()
+
+    def __init__(self, linear, latent_dim=64):
+        super().__init__()
 
         self.encoder = nn.Sequential(
-            nn.Conv2d(1, 32, kernel_size=3, padding=1),  
-            nn.BatchNorm2d(32),  
-            nn.ReLU(), 
+            nn.Conv2d(1, 32, kernel_size=3, padding=1),
+            nn.BatchNorm2d(32),
+            nn.ReLU(),
             ResidualBlock(32),
-            nn.Conv2d(32, 64, kernel_size=3,  padding=1),  
-            nn.BatchNorm2d(64),  
-            nn.ReLU(),    
+            nn.Conv2d(32, 64, kernel_size=3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
             ResidualBlock(64),
-            nn.Conv2d(64, 128, kernel_size=3,  padding=1),  
-            nn.BatchNorm2d(128),  
+            nn.Conv2d(64, 128, kernel_size=3, padding=1),
+            nn.BatchNorm2d(128),
             nn.ReLU(),
             ResidualBlock(128),
-            nn.Flatten()
+            nn.Flatten(),
         )
         self.linear_encode = nn.Sequential(
-            nn.Linear(128 * 10*linear, 1024),
+            nn.Linear(128 * 10 * linear, 1024),
             nn.ReLU(),
-            nn.Linear(1024, latent_dim)
+            nn.Linear(1024, latent_dim),
         )
 
         self.linear_decode = nn.Sequential(
             nn.Linear(latent_dim, 1024),
             nn.ReLU(),
-            nn.Linear(1024, 128*10*linear)
+            nn.Linear(1024, 128 * 10 * linear),
         )
         self.decoder = nn.Sequential(
-            nn.Unflatten(1, (128,10,linear)),
+            nn.Unflatten(1, (128, 10, linear)),
             nn.ConvTranspose2d(128, 64, kernel_size=3, padding=1),
             nn.BatchNorm2d(64),
             nn.ReLU(),
             ResidualBlock(64),
-
             nn.ConvTranspose2d(64, 32, kernel_size=3, padding=1),
             nn.BatchNorm2d(32),
             nn.ReLU(),
             ResidualBlock(32),
-
             nn.ConvTranspose2d(32, 1, kernel_size=3, padding=1),
-            nn.Sigmoid()
+            nn.Sigmoid(),
         )
 
     def forward(self, x):
@@ -113,8 +115,8 @@ class ConvAutoEncoderRes(nn.Module):
         Returns:
             Tensor: Reconstructed tensor of same shape as input.
         """
-        enc = self.encoder(x)                     
-        enc = self.linear_encode(enc)             
-        dec = self.linear_decode(enc)              
+        enc = self.encoder(x)
+        enc = self.linear_encode(enc)
+        dec = self.linear_decode(enc)
         out = self.decoder(dec)
         return out

@@ -1,25 +1,26 @@
-from torch.utils.data import DataLoader, TensorDataset
-import torch.nn as nn
+from modules.modules_kidera.gpu import GPU
 import torch
 from autoencoder_residual import ConvAutoEncoderRes
-import numpy as np
-use_gpu=True
-if use_gpu and torch.cuda.is_available():
-    device = torch.device("cuda:0")
-elif use_gpu and torch.backends.mps.is_available():
-    device = torch.device("mps")
-else:
-    device = torch.device("cpu")
+from torch.utils.data import DataLoader, TensorDataset
+import pandas as pd
 
-batch_size = 64
-linear = 19  
-latent_dim = 64
 
-data_train_cdr3=torch.load('../../../data_train_test_cdr3.pt')
+USE_GPU = True
+BATCH_SIZE = 64
+LINEAR = 19
+LATENT_DIM = 64
 
-model = ConvAutoEncoderRes(linear=19,latent_dim=64).to(device)
-model.load_state_dict(torch.load('/projects/tcr_nlp/conv_autoencoder/conv_res_block/cdr3_res.pth'))
-def get_encoded_cdr(cdr_enc, model, batch_size, device='cuda'):    
+device = GPU(USE_GPU)
+
+data_train_cdr3 = torch.load("../../../data_train_test_cdr3.pt")
+
+model = ConvAutoEncoderRes(linear=LINEAR, latent_dim=LATENT_DIM).to(device)
+model.load_state_dict(
+    torch.load("/projects/tcr_nlp/conv_autoencoder/conv_res_block/cdr3_res.pth")
+)
+
+
+def get_encoded_cdr(cdr_enc, model, batch_size, device="cuda"):
     """
     Pass epitope encodings through an autoencoder and return both encoded (latent) and decoded outputs.
 
@@ -30,7 +31,7 @@ def get_encoded_cdr(cdr_enc, model, batch_size, device='cuda'):
         device (str): Device for computation ('cuda' or 'cpu').
 
     Returns:
-        Tuple[Tensor, Tensor]: 
+        Tuple[Tensor, Tensor]:
             - Encoded latent representations (shape: [N, latent_dim])
             - Reconstructed epitopes (same shape as input)
     """
@@ -48,7 +49,10 @@ def get_encoded_cdr(cdr_enc, model, batch_size, device='cuda'):
             decoded_cdr3.append(decoded.cpu())
     return torch.cat(encoded_cdr3), torch.cat(decoded_cdr3)
 
-encoded_cdr3,decoded_cdr3 = get_encoded_cdr(data_train_cdr3,model,batch_size)
+
+encoded_cdr3, decoded_cdr3 = get_encoded_cdr(data_train_cdr3, model, BATCH_SIZE)
 
 encoded_cdr3 = pd.DataFrame(encoded_cdr3)
-encoded_cdr3.to_csv('../../../encoded_cdr3_kidera_residual.csv', index=False, header=False)
+encoded_cdr3.to_csv(
+    "../../../encoded_cdr3_kidera_residual.csv", index=False, header=False
+)
