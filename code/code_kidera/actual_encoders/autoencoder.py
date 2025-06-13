@@ -1,5 +1,5 @@
-import torch
 import torch.nn as nn
+
 
 class ConvAutoEncoder(nn.Module):
     """
@@ -29,7 +29,8 @@ class ConvAutoEncoder(nn.Module):
           amino acid features per residue, and `linear` is the number of
           amino acids in the CDR3 sequence (possibly padded to a fixed length).
     """
-    def __init__(self, linear, latent_dim=64):
+
+    def __init__(self, linear, latent_dim = 64):
         """
         Initializes the convolutional autoencoder.
 
@@ -40,38 +41,34 @@ class ConvAutoEncoder(nn.Module):
         super(ConvAutoEncoder, self).__init__()
 
         self.encoder = nn.Sequential(
-            nn.Conv2d(1, 32, kernel_size=3, padding=1),  
-            nn.BatchNorm2d(32),  
-            nn.ReLU(), 
-            nn.Conv2d(32, 64, kernel_size=3, padding=1),  
-            nn.BatchNorm2d(64),  
-            nn.ReLU(),    
-            nn.Conv2d(64, 128, kernel_size=3, padding=1),  
-            nn.BatchNorm2d(128),  
+            nn.Conv2d(1, 32, kernel_size = 3, padding = 1),
+            nn.BatchNorm2d(32),
             nn.ReLU(),
-            nn.Flatten()
+            nn.Conv2d(32, 64, kernel_size = 3, padding = 1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.Conv2d(64, 128, kernel_size = 3, padding = 1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
+            nn.Flatten(),
         )
         self.linear_encode = nn.Sequential(
-            nn.Linear(128 * 10 * linear, 1024),
-            nn.ReLU(),
-            nn.Linear(1024, latent_dim)
+            nn.Linear(128 * 10 * linear, 1024), nn.ReLU(), nn.Linear(1024, latent_dim)
         )
 
         self.linear_decode = nn.Sequential(
-            nn.Linear(latent_dim, 1024),
-            nn.ReLU(),
-            nn.Linear(1024, 128 * 10 * linear)
+            nn.Linear(latent_dim, 1024), nn.ReLU(), nn.Linear(1024, 128 * 10 * linear)
         )
         self.decoder = nn.Sequential(
             nn.Unflatten(1, (128, 10, linear)),
-            nn.ConvTranspose2d(128, 64, kernel_size=3, padding=1),
+            nn.ConvTranspose2d(128, 64, kernel_size = 3, padding = 1),
             nn.BatchNorm2d(64),
             nn.ReLU(),
-            nn.ConvTranspose2d(64, 32, kernel_size=3, padding=1),
+            nn.ConvTranspose2d(64, 32, kernel_size = 3, padding = 1),
             nn.BatchNorm2d(32),
             nn.ReLU(),
-            nn.ConvTranspose2d(32, 1, kernel_size=3, padding=1),
-            nn.Sigmoid()
+            nn.ConvTranspose2d(32, 1, kernel_size = 3, padding = 1),
+            nn.Sigmoid(),
         )
 
     def forward(self, x):
@@ -86,8 +83,8 @@ class ConvAutoEncoder(nn.Module):
         Returns:
             torch.Tensor: Reconstructed input tensor of the same shape.
         """
-        enc = self.encoder(x)                      
-        enc = self.linear_encode(enc)              
-        dec = self.linear_decode(enc)              
+        enc = self.encoder(x)
+        enc = self.linear_encode(enc)
+        dec = self.linear_decode(enc)
         out = self.decoder(dec)
         return out

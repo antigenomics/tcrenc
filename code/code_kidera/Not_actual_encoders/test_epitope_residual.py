@@ -1,26 +1,26 @@
-from torch.utils.data import DataLoader, TensorDataset
-import torch.nn as nn
+import pandas as pd
 import torch
 from autoencoder_residual import ConvAutoEncoderRes
-import numpy as np
-use_gpu=True
-if use_gpu and torch.cuda.is_available():
-    device = torch.device("cuda:0")
-elif use_gpu and torch.backends.mps.is_available():
-    device = torch.device("mps")
-else:
-    device = torch.device("cpu")
+from modules.modules_kidera.gpu import GPU
+from torch.utils.data import DataLoader, TensorDataset
 
-batch_size = 64
-linear = 19  
-latent_dim = 64
 
-model=ConvAutoEncoderRes(linear,latent_dim=64)
-model.load_state_dict(torch.load('/projects/tcr_nlp/conv_autoencoder/conv_res_block/epitope_res.pth'))
+USE_GPU = True
+BATCH_SIZE = 64
+LINEAR = 19
+LATENT_DIM = 64
 
-epitope_tensor=torch.load('../../../epitopes_test_tensor.pt')
+device = GPU(USE_GPU)
 
-def get_encoded_epitope(epitope_enc, model, batch_size, device='cuda'):        
+model = ConvAutoEncoderRes(LINEAR, latent_dim=LATENT_DIM)
+model.load_state_dict(
+    torch.load("/projects/tcr_nlp/conv_autoencoder/conv_res_block/epitope_res.pth")
+)
+
+epitope_tensor = torch.load("../../../epitopes_test_tensor.pt")
+
+
+def get_encoded_epitope(epitope_enc, model, batch_size, device="cuda"):
     """
     Pass epitope encodings through an autoencoder and return both encoded (latent) and decoded outputs.
 
@@ -31,7 +31,7 @@ def get_encoded_epitope(epitope_enc, model, batch_size, device='cuda'):
         device (str): Device for computation ('cuda' or 'cpu').
 
     Returns:
-        Tuple[Tensor, Tensor]: 
+        Tuple[Tensor, Tensor]:
             - Encoded latent representations (shape: [N, latent_dim])
             - Reconstructed epitopes (same shape as input)
     """
@@ -49,8 +49,17 @@ def get_encoded_epitope(epitope_enc, model, batch_size, device='cuda'):
             decoded_epitope.append(decoded.cpu())
 
     return torch.cat(encoded_epitope), torch.cat(decoded_epitope)
-encoded_epitope,decoded_epitope = get_encoded_epitope(epitope_tensor,model,64)
 
+
+encoded_epitope, decoded_epitope = get_encoded_epitope(
+    epitope_tensor, 
+    model, 
+    BATCH_SIZE
+)
 
 encoded_epitope = pd.DataFrame(encoded_epitope)
-encoded_epitope.to_csv('../../../encoded_epitope_kidera_residual.csv', index=False, header=False)
+encoded_epitope.to_csv(
+    "../../../encoded_epitope_kidera_residual.csv", 
+    index=False, 
+    header=False
+)
