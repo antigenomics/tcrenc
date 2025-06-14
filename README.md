@@ -31,12 +31,7 @@ The input file should be a csv file with a clear structure. It should have 2 col
 ### Output
 After running our algorithms you will get embeddings of your sequences. The output format depends on the representation you choose.
 
-If you choose OneHot, you will get 4 files with embeddings for tcr and epitopе respectively. The last index in the output file name indicates the index before or after which the dummy amino acids are placed:
-
-- `..3` - dummy amino acids come after the third amino acid
-- `..4` - dummy amino acids come after the fourth amino acid
-- `..-3` - dummy amino acids come before the third from the end amino acid
-- `..-4` - dummy amino acids come before the fourth from the end amino acid
+If you choose OneHot, you will get 2 files with embeddings for tcr and epitopе respectively. Note that for each sequence where will be $4*latent_dims$ features (Because of 4 variants for gap insertions).
 
 If you choose Kidera, you will get 2 files with embeddings for tcr and epitopе respectively. It is important to note that if you choose to use the Residual block (`residual_block true`), the file name will have the suffix `_residual` at the end. 
 ## Final models
