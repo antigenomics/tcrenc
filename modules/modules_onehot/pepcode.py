@@ -4,8 +4,8 @@ import modules.modules_onehot.constants as constants
 
 
 AA_LIST = constants.AA_LIST
-AA_LIST_atchley_factors = constants.AA_LIST_atchley_factors
-blosum62 = constants.blosum62
+AA_LIST_ATCHLEY_FACTORS = constants.AA_LIST_ATCHLEY_FACTORS
+BLOSUM62 = constants.BLOSUM62
 
 
 def one_hot_code(peptide):
@@ -52,7 +52,7 @@ def blosum_score(a, b):
     """
     Return Blossum 62 score for 2 aminoacids.
     """
-    return blosum62[(''.join([a, b]))]
+    return BLOSUM62[(''.join([a, b]))]
 
 
 def atchley_factors_code(peptide):
@@ -63,7 +63,7 @@ def atchley_factors_code(peptide):
 
     for i, k in enumerate(peptide):
         for j in range(5):
-            pep_af_encoded[j][i] = AA_LIST_atchley_factors[k][j]
+            pep_af_encoded[j][i] = AA_LIST_ATCHLEY_FACTORS[k][j]
 
     return pep_af_encoded
 
@@ -77,9 +77,9 @@ def atchley_factors_decode(pep_af_matr):
     for i in range(pep_af_matr.shape[1]):
         min_value = float("inf")
         key_min = ''
-        for j in AA_LIST_atchley_factors.keys():
-            if ((pep_af_matr[:, i] - AA_LIST_atchley_factors[j])**2).sum() < min_value:
-                min_value = ((pep_af_matr[:, i] - AA_LIST_atchley_factors[j]) ** 2).sum()
+        for j in AA_LIST_ATCHLEY_FACTORS.keys():
+            if ((pep_af_matr[:, i] - AA_LIST_ATCHLEY_FACTORS[j])**2).sum() < min_value:
+                min_value = ((pep_af_matr[:, i] - AA_LIST_ATCHLEY_FACTORS[j]) ** 2).sum()
                 key_min = j
         ans += key_min
 

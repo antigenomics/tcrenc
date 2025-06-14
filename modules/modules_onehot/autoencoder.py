@@ -2,7 +2,7 @@ import torch.nn as nn
 import modules.modules_onehot.constants as constants
 
 
-latent_dims = constants.latent_dims
+latent_dims = constants.LATENT_DIMS
 
 
 class Autoencoder(nn.Module):

@@ -8,32 +8,27 @@ import sys
 # libs for ml
 import torch
 import torch.nn as nn
+from torch.utils.data import TensorDataset, DataLoader
 
 warnings.filterwarnings('ignore')
 current_file_path = Path(__file__).absolute()
 project_root = current_file_path.parent.parent.parent
 sys.path.append(str(project_root))
 
-# my module with some func
+# our module with some func
 import modules.modules_onehot.pepcode as pepcode
 from modules.modules_onehot.autoencoder import Autoencoder
 import modules.modules_onehot.constants as constants
+from modules.modules_kidera.gpu import GPU
 
 
-latent_dims = constants.latent_dims
+latent_dims = constants.LATENT_DIMS
 batch_size = 400
-use_gpu = True
+use_gpu = constants.USE_GPU
 loss_function = nn.CrossEntropyLoss()
 max_cdr3_len = 19
 max_ep_len = 20
-
-# Device set
-if use_gpu and torch.cuda.is_available():
-    device = torch.device("cuda:0")
-elif use_gpu and torch.backends.mps.is_available():
-    device = torch.device("mps")
-else:
-    device = torch.device("cpu")
+device = GPU(use_gpu)
 
 
 def process(input_file: str, output_dir: str) -> None:
@@ -82,19 +77,19 @@ def process(input_file: str, output_dir: str) -> None:
     ep_oh_matr_size = inp_data_ep_oh[0].size
 
     # Prepare cdr3 dataloader
-    inp_data_cdr3_oh_dataset = torch.utils.data.TensorDataset(torch.tensor(inp_data_cdr3_oh),
-                                                              torch.tensor(np.ones(inp_data_cdr3_oh.shape[0])))
+    inp_data_cdr3_oh_dataset = TensorDataset(torch.tensor(inp_data_cdr3_oh),
+                                             torch.tensor(np.ones(inp_data_cdr3_oh.shape[0])))
 
-    inp_data_cdr3_oh_dl = torch.utils.data.DataLoader(inp_data_cdr3_oh_dataset,
-                                                      batch_size=batch_size,
-                                                      shuffle=False)
+    inp_data_cdr3_oh_dl = DataLoader(inp_data_cdr3_oh_dataset,
+                                     batch_size=batch_size,
+                                     shuffle=False)
 
     # Prepare epitope dataloader
-    inp_data_ep_oh_dataset = torch.utils.data.TensorDataset(torch.tensor(inp_data_ep_oh),
-                                                            torch.tensor(np.ones(inp_data_ep_oh.shape[0])))
-    inp_data_ep_oh_dl = torch.utils.data.DataLoader(inp_data_ep_oh_dataset,
-                                                    batch_size=batch_size,
-                                                    shuffle=False)
+    inp_data_ep_oh_dataset = TensorDataset(torch.tensor(inp_data_ep_oh),
+                                           torch.tensor(np.ones(inp_data_ep_oh.shape[0])))
+    inp_data_ep_oh_dl = DataLoader(inp_data_ep_oh_dataset,
+                                   batch_size=batch_size,
+                                   shuffle=False)
 
     model_cdr3 = Autoencoder(399)
     model_cdr3 = torch.load('./models/models_onehot/cdr3_model_final.pth',
