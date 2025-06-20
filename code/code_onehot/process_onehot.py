@@ -17,14 +17,15 @@ sys.path.append(str(project_root))
 
 # our module with some func
 import modules.modules_onehot.pepcode as pepcode
-from modules.modules_onehot.autoencoder import Autoencoder
-import modules.modules_onehot.constants as constants
+from modules.modules_onehot.autoencoder_onehot import Autoencoder_onehot
+import modules.constants as constants
+import modules.params as params
 from modules.modules_kidera.gpu import GPU
 
 
-latent_dims = constants.LATENT_DIMS
+latent_dims = params.LATENT_DIMS
 batch_size = 400
-use_gpu = constants.USE_GPU
+use_gpu = params.USE_GPU
 loss_function = nn.CrossEntropyLoss()
 max_cdr3_len = 19
 max_ep_len = 20
@@ -91,9 +92,9 @@ def process(input_file: str, output_dir: str) -> None:
                                    batch_size=batch_size,
                                    shuffle=False)
 
-    model_cdr3 = Autoencoder(399)
-    model_cdr3 = torch.load('./models/models_onehot/cdr3_model_final.pth',
-                            weights_only=False, map_location='cpu')
+    model_cdr3 = Autoencoder_onehot(399)
+    model_cdr3.load_state_dict(torch.load('./models/models_onehot/cdr3_model_final_new.pth',
+                                          weights_only=True))
     model_cdr3 = model_cdr3.to(device)
 
     # Make cdr3 embeddings
@@ -108,7 +109,7 @@ def process(input_file: str, output_dir: str) -> None:
             pep_o = pep_o.to(device)
             pep = pep.reshape(-1, cdr3_oh_matr_size)
             pep = pep.to(device)
-            pep_encod = model_cdr3.encoding(pep)
+            pep_encod = model_cdr3.make_embeddings_from_seq(pep)
             pep_recon = model_cdr3(pep)
             pep_recon_rs = pep_recon.reshape(pep_o.shape)
             loss = loss_function(pep_recon_rs, pep_o)
@@ -128,9 +129,9 @@ def process(input_file: str, output_dir: str) -> None:
 
     cdr3_embd_rs = cdr3_embd.reshape(len(inp_data_cdr3_list_ori), 4*64)
 
-    model_ep = Autoencoder(420)
-    model_ep = torch.load('./models/models_onehot/epitope_model_final.pth',
-                          weights_only=False, map_location='cpu')
+    model_ep = Autoencoder_onehot(420)
+    model_ep.load_state_dict(torch.load('./models/models_onehot/epitope_model_final_new.pth',
+                                          weights_only=True))
     model_ep = model_ep.to(device)
 
     # Make epitope embeddings
@@ -145,7 +146,7 @@ def process(input_file: str, output_dir: str) -> None:
             pep_o = pep_o.to(device)
             pep = pep.reshape(-1, ep_oh_matr_size)
             pep = pep.to(device)
-            pep_encod = model_ep.encoding(pep)
+            pep_encod = model_ep.make_embeddings_from_seq(pep)
             pep_recon = model_ep(pep)
             pep_recon_rs = pep_recon.reshape(pep_o.shape)
             loss = loss_function(pep_recon_rs, pep_o)

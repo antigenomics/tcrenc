@@ -1,13 +1,14 @@
 import torch.nn as nn
-import modules.modules_onehot.constants as constants
+from modules.autoencoder import Autoencoder
+import modules.params as params
 
 
-latent_dims = constants.LATENT_DIMS
+latent_dims = params.LATENT_DIMS
 
 
-class Autoencoder(nn.Module):
+class Autoencoder_onehot(Autoencoder):
     def __init__(self, input_dims):
-        super(Autoencoder, self).__init__()
+        super(Autoencoder_onehot, self).__init__()
         self.encoder = nn.Sequential(
             nn.Linear(in_features=input_dims, out_features=latent_dims),
         )
@@ -20,10 +21,10 @@ class Autoencoder(nn.Module):
         decoded = self.decoder(encoded)
         return decoded
 
-    def encoding(self, x):
+    def make_embeddings_from_seq(self, x):
         encoded = self.encoder(x)
         return encoded
 
-    def decoding(self, encoded):
+    def make_seq_from_embeddings(self, encoded):
         decoded = self.decoder(encoded)
         return decoded
