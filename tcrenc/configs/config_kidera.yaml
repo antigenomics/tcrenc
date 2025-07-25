@@ -1,0 +1,18 @@
+---
+general:
+  LATENT_DIMS: 64
+  MAX_CDR3_LEN: 19
+  MIN_CDR3_LEN: 11
+  MAX_EPITOPE_LEN: 20
+  MIN_EPITOPE_LEN: 6
+  BATCH_SIZE: 64
+  # Using torchtune for load class. See: https://docs.pytorch.org/torchtune/0.3/deep_dives/configs.html#config-tutorial-label
+  LOSS_FUNCTION:
+    _component_: torchnn.MSELoss
+train:
+  EPOCH_NUM: 100
+  LEARNING_RATE: 1e-3
+validate:
+  blank: 'blank'
+run:
+  WEIGHTS: '---'

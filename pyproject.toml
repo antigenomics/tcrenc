@@ -1,0 +1,19 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tcrenc"
+version = "0.0.1"
+authors = [
+  { name="askomolov", email="askomolov@mail.ru" },
+  { name="BelyashMatvey", email="yulia.mow@gmail.com" },
+  { name="vek239", email="elizaveta.k.vlasova@gmail.com" },
+  { name="mikessh", email="mikhail.shugay@gmail.com" },
+]
+description = "--"
+readme = "README.md"
+
+[project.scripts]
+tcrenc-run = "tcrenc.tcrenc_run:main"
+

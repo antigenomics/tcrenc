@@ -1,0 +1,14 @@
+---
+general:
+  BATCH_SIZE: 400
+  # Using torchtune for load class. See: https://docs.pytorch.org/torchtune/0.3/deep_dives/configs.html#config-tutorial-label
+  LOSS_FUNCTION:
+    _component_: torch.nn.CrossEntropyLoss
+train:
+  EPOCH_NUM: 200
+  LEARNING_RATE: 1e-4
+validate:
+  blank: 'blank'
+run:
+  WEIGHTS_CDR3: './tcrenc/models/autoencoder_onehot/weights/cdr3_model_final_new_new.pth'
+  WEIGHTS_EPIOPE: './tcrenc/models/autoencoder_onehot/weights/epitope_model_final_new_new.pth'
