@@ -30,6 +30,6 @@ class Autoencoder(Module):
     def reconstructed_data_process(self, reconstructed_data: list) -> list:
         pass
 
-    # @abstractmethod need this? May be here something like read config and fc init
-    # def params_process(self, data):
-    #     pass
+    @abstractmethod
+    def embeddings_data_process(self, embeddings: list) -> list:
+        pass

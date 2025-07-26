@@ -55,7 +55,9 @@ def main():
                                     device=device, model=model_cdr3,
                                     criterion=loss_function)
 
-        saving_results(cdr3_output, output_path, args.embed_type, gen_config, data['cdr3'])
+        cdr3_df = model_cdr3.embeddings_data_process(cdr3_output, data['cdr3'])
+
+        saving_results(cdr3_df, output_path, args.embed_type, data['cdr3'].name)
 
     if gen_config['epitope_ex'] is True:
         model_epitope = Model(gen_config, seq_type='antigen_epitope')
@@ -70,7 +72,9 @@ def main():
                                        device=device, model=model_epitope,
                                        criterion=loss_function)
 
-        saving_results(epitope_output, output_path, args.embed_type, gen_config, data['antigen_epitope'])
+        epitope_df = model_epitope.embeddings_data_process(epitope_output, data['antigen_epitope'])
+
+        saving_results(epitope_df, output_path, args.embed_type, data['antigen_epitope'].name)
 
     print("All files saved!")
 

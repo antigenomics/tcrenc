@@ -119,3 +119,12 @@ class Autoencoder_onehot(Autoencoder):
     def reconstructed_data_process(self, reconstructed_data: list) -> list:
         # TODO make this function
         pass
+
+    def embeddings_data_process(self, encoder_output: list, input_seqs: pd.Series) -> list:
+        embeddings = encoder_output.reshape(input_seqs.shape[0], 4*self.config['LATENT_DIMS'])
+
+        embd = pd.concat([pd.DataFrame(embeddings),
+                          input_seqs.to_frame()],
+                         axis=1)
+
+        return embd

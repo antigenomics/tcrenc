@@ -61,26 +61,17 @@ def model_process(input_dataloader: DataLoader, device, model, criterion):
             num_batches += 1
         output.append(pep_encod.cpu())
     loss_avg /= num_batches
-    print('Average reconstruction error of cdr3 sequences on sample: %f' % (loss_avg))
+    print(f'Average reconstruction error of {model.seq_type} sequences on sample: {loss_avg:.4f}')
 
     return torch.cat(output)
 
 
-def saving_results(output: torch.Tensor, output_path: str, embed_type: str, config: dict, input_seqs: pd.Series) -> None:
+def saving_results(embd: pd.DataFrame, output_dir: str, embed_type: str, seqs_type: str) -> None:
     """
     Function to save embeddings to csv file.
     One row consist input seq and embedding for it.
     """
-
-    if embed_type == 'onehot':
-        embeddings = output.reshape(input_seqs.shape[0], 4*config['LATENT_DIMS'])
-    else:
-        embeddings = output
-
-    embd = pd.concat([pd.DataFrame(embeddings),
-                      input_seqs.to_frame()],
-                     axis=1)
-    embd.to_csv(f'{output_path}/embeddings_{input_seqs.name}_{embed_type}.csv',
+    embd.to_csv(f'{output_dir}/embeddings_{seqs_type}_{embed_type}.csv',
                 index=False)
 
-    print(f'{output_path}/embeddings_{input_seqs.name}_{embed_type}.csv file saved!')
+    print(f'{output_dir}/embeddings_{seqs_type}_{embed_type}.csv file saved!')
