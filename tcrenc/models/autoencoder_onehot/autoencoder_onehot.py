@@ -60,39 +60,25 @@ class Autoencoder_onehot(Autoencoder):
         decoded = self.decoder(encoded)
         return decoded
 
-    def model_process(self, input_dataloader: DataLoader, device, criterion, process_type):
+    def model_process(self, input_dataloader: DataLoader, device: torch.device, criterion, process_type: str) -> Tensor:
 
         if process_type == 'train':
-            self.train()
+            # from tcrenc.utils.train import model_process
+            pass
 
-        elif process_type == 'validate' or process_type == 'run':
-            self.eval()
+        elif process_type == 'validate':
+            # rom tcrenc.utils.validate import model_process
+            pass
 
-            output = []
-            loss_avg, num_batches = 0, 0
+        elif process_type == 'run':
+            from tcrenc.utils.run import model_process
+            model_output = model_process(self,
+                                         input_dataloader=input_dataloader,
+                                         device=device,
+                                         criterion=criterion,
+                                         )
+            return model_output
 
-            for pre_pep in input_dataloader:
-                with torch.no_grad():
-                    pep = pre_pep[0].to(device)
-
-                    if process_type == 'run':
-                        pep_for_output = self.make_embeddings_from_seq(pep)
-
-                    pep_recon = self.forward(pep)
-
-                    if process_type == 'validate':
-                        pep_for_output = pep_recon
-
-                    loss = criterion(pep_recon, pep)
-                    loss_avg += loss.item()
-                    num_batches += 1
-
-                output.append(pep_for_output.cpu())
-
-            loss_avg /= num_batches
-            print(f'Average reconstruction error of {self.seq_type} sequences on sample: {loss_avg:.4f}')
-
-            return torch.cat(output)
         else:
             raise ValueError('Unknown process type')
 
