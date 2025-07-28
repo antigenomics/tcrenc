@@ -16,6 +16,9 @@ class Autoencoder_onehot(Autoencoder):
     def __init__(self,
                  config: dict,
                  seq_type: str):
+        """
+        TODO description
+        """
         super(Autoencoder_onehot, self).__init__()
 
         self.config = config
@@ -44,16 +47,16 @@ class Autoencoder_onehot(Autoencoder):
             nn.Unflatten(1, (LEN_AA_LIST, int(self.input_dims/LEN_AA_LIST))),
         )
 
-    def forward(self, x: Tensor):
+    def forward(self, x: Tensor) -> Tensor:
         encoded = self.encoder(x)
         decoded = self.decoder(encoded)
         return decoded
 
-    def make_embeddings_from_seq(self, x: Tensor):
+    def make_embeddings_from_seq(self, x: Tensor) -> Tensor:
         encoded = self.encoder(x)
         return encoded
 
-    def make_seq_from_embeddings(self, encoded: Tensor):
+    def make_seq_from_embeddings(self, encoded: Tensor) -> Tensor:
         decoded = self.decoder(encoded)
         return decoded
 
@@ -120,7 +123,10 @@ class Autoencoder_onehot(Autoencoder):
         # TODO make this function
         pass
 
-    def embeddings_data_process(self, encoder_output: list, input_seqs: pd.Series) -> list:
+    def embeddings_data_process(self, encoder_output: Tensor, input_seqs: pd.Series) -> pd.DataFrame:
+        """
+        TODO descriprion
+        """
         embeddings = encoder_output.reshape(input_seqs.shape[0], 4*self.config['LATENT_DIMS'])
 
         embd = pd.concat([pd.DataFrame(embeddings),

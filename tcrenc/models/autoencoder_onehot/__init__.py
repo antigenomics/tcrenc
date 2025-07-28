@@ -1,1 +1,0 @@
-# mb here just ask read coinfig function from utils/basic NO
