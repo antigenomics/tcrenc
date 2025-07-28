@@ -1,5 +1,6 @@
 from abc import abstractmethod
 import pandas as pd
+from torch import Tensor
 from torch.nn import Module
 from torch.utils.data import DataLoader
 
@@ -31,5 +32,9 @@ class Autoencoder(Module):
         pass
 
     @abstractmethod
-    def embeddings_data_process(self, embeddings: list) -> list:
+    def embeddings_data_process(self, encoder_output: Tensor, input_seqs: pd.Series) -> pd.DataFrame:
+        pass
+
+    @abstractmethod
+    def model_process(self, device, criterion, process_type: str):
         pass

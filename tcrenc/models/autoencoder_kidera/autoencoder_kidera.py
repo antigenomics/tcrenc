@@ -129,6 +129,42 @@ class Autoencoder_kidera(Autoencoder):
         decoded = self.decoder(self.linear_decode(encoded))
         return decoded
 
+    def model_process(self, input_dataloader: DataLoader, device, criterion, process_type):
+
+        if process_type == 'train':
+            self.train()
+
+        elif process_type == 'validate' or process_type == 'run':
+            self.eval()
+
+            output = []
+            loss_avg, num_batches = 0, 0
+
+            for pre_pep in input_dataloader:
+                with torch.no_grad():
+                    pep = pre_pep[0].to(device)
+
+                    if process_type == 'run':
+                        pep_for_output = self.make_embeddings_from_seq(pep)
+
+                    pep_recon = self.forward(pep)
+
+                    if process_type == 'validate':
+                        pep_for_output = pep_recon
+
+                    loss = criterion(pep_recon, pep)
+                    loss_avg += loss.item()
+                    num_batches += 1
+
+                output.append(pep_for_output.cpu())
+
+            loss_avg /= num_batches
+            print(f'Average reconstruction error of {self.seq_type} sequences on sample: {loss_avg:.4f}')
+
+            return torch.cat(output)
+        else:
+            raise ValueError('Unknown process type')
+
     def _gap_insertion(self, inp_seq: str) -> str:
 
         """

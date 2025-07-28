@@ -5,7 +5,7 @@ from torchtune import config
 
 from utils.argparsers import run_argparser
 from utils.basic import read_config, filter_input, set_device
-from utils.run import input_process, model_process, saving_results
+from utils.run import input_process, saving_results
 
 SCRIPT_TYPE = 'run'
 
@@ -52,9 +52,10 @@ def main():
 
         cdr3_dataloader = model_cdr3.input_data_process(inp_data=data['cdr3'])
 
-        cdr3_output = model_process(input_dataloader=cdr3_dataloader,
-                                    device=device, model=model_cdr3,
-                                    criterion=loss_function)
+        cdr3_output = model_cdr3.model_process(input_dataloader=cdr3_dataloader,
+                                               device=device,
+                                               criterion=loss_function,
+                                               process_type=SCRIPT_TYPE)
 
         cdr3_df = model_cdr3.embeddings_data_process(cdr3_output, data['cdr3'])
 
@@ -70,9 +71,10 @@ def main():
 
         epitope_dataloader = model_epitope.input_data_process(inp_data=data['antigen_epitope'])
 
-        epitope_output = model_process(input_dataloader=epitope_dataloader,
-                                       device=device, model=model_epitope,
-                                       criterion=loss_function)
+        epitope_output = model_epitope.model_process(input_dataloader=epitope_dataloader,
+                                                     device=device,
+                                                     criterion=loss_function,
+                                                     process_type=SCRIPT_TYPE)
 
         epitope_df = model_epitope.embeddings_data_process(epitope_output, data['antigen_epitope'])
 
