@@ -1,6 +1,7 @@
 ---
 general:
-  LINEAR_PART: 19
+  LINEAR_PART_CDR3: 19
+  LINEAR_PART_EPITOPE: 20
   BATCH_SIZE: 64
   LOSS_FUNCTION:
     _component_: torch.nn.MSELoss
@@ -11,4 +12,4 @@ validate:
   blank: 'blank'
 run:
   WEIGHTS_CDR3: './tcrenc/models/autoencoder_kidera/weights/cdr3.pth'
-  WEIGHTS_EPIOPE: './tcrenc/models/autoencoder_onehot/weights/epitope.pth'
+  WEIGHTS_EPIOPE: './tcrenc/models/autoencoder_kidera/weights/epitope.pth'

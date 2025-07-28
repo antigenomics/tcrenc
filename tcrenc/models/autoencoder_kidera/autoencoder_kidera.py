@@ -63,14 +63,15 @@ class Autoencoder_kidera(Autoencoder):
         if self.seq_type == 'cdr3':
             self._max_len = self.config['MAX_CDR3_LEN']
             self.input_dims = self._max_len * LEN_AA_LIST
+            self.linear_part = self.config['LINEAR_PART_CDR3']
         elif self.seq_type == 'antigen_epitope':
             self._max_len = self.config['MAX_EPITOPE_LEN']
             self.input_dims = self._max_len * LEN_AA_LIST
+            self.linear_part = self.config['LINEAR_PART_EPITOPE']
         else:
             raise ValueError('Unknown seq type for this model.')
 
         self.latent_dims = self.config['LATENT_DIMS']
-        self.linear_part = self.config['LINEAR_PART']
 
         self.encoder = nn.Sequential(
             nn.Conv2d(1, 32, kernel_size=3, padding=1),
@@ -136,9 +137,18 @@ class Autoencoder_kidera(Autoencoder):
             inp_seq: Amino acid sequence
         """
 
-        if self.seq_type == 'cdr3':
-            # TODO
-            pass
+        if self.seq_type == 'antigen_epitope':
+            start_end = (self._max_len - len(inp_seq)) // 2
+            if len(inp_seq) % 2 == 0:
+                return start_end * "-" + inp_seq + start_end * "-"
+            else:
+                return (
+                    start_end * "-"
+                    + inp_seq[: len(inp_seq) // 2]
+                    + "-"
+                    + inp_seq[len(inp_seq) // 2:]
+                    + start_end * "-"
+                       )
 
         length_x = self._max_len - len(inp_seq)
         if len(inp_seq) == 4:
