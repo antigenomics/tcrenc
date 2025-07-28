@@ -12,4 +12,6 @@ validate:
   blank: 'blank'
 run:
   WEIGHTS_CDR3: './tcrenc/models/autoencoder_kidera/weights/cdr3.pth'
+  # weights on server path projects/tcr_nlp/conv_autoencoder/conv/cdr3.pth
   WEIGHTS_EPIOPE: './tcrenc/models/autoencoder_kidera/weights/epitope.pth'
+  # weights on server path projects/tcr_nlp/conv_autoencoder/conv/epitope.pth
