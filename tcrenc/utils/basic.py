@@ -24,19 +24,22 @@ def filter_input(inp_data: pd.DataFrame, conf: dict) -> pd.DataFrame:
 
     # Filter CDR3
     filtered_data = inp_data.copy()
-    if conf['cdr3_ex'] is True:
+    col_names = filtered_data.columns
+
+    if 'cdr3' in col_names:
         filtered_data = filtered_data[filtered_data['cdr3'].str.match(r'^C.*[FW]$')]
         filtered_data = filtered_data[filtered_data['cdr3'].str.len() >= conf['MIN_CDR3_LEN']]
         filtered_data = filtered_data[filtered_data['cdr3'].str.len() <= conf['MAX_CDR3_LEN']]
 
     # Filter Epitope
-    if conf['epitope_ex'] is True:
+    if 'antigen_epitope' in col_names:
         filtered_data = filtered_data[filtered_data['antigen_epitope'].str.len() >= conf['MIN_EPITOPE_LEN']]
         filtered_data = filtered_data[filtered_data['antigen_epitope'].str.len() <= conf['MAX_EPITOPE_LEN']]
 
     filtered_data.reset_index(drop=True, inplace=True)
 
     if filtered_data.shape[0] == 0:
+        # TODO maybe fix
         raise ValueError('There are no rows in input that satisfy the conditions in config.')
 
     return filtered_data
