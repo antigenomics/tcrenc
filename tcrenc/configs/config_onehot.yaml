@@ -10,4 +10,4 @@ validate:
   blank: 'blank'
 run:
   WEIGHTS_CDR3: './tcrenc/models/autoencoder_onehot/weights/cdr3_model_final_new_new_new.pth'
-  WEIGHTS_EPIOPE: './tcrenc/models/autoencoder_onehot/weights/epitope_model_final_new_new.pth'
+  WEIGHTS_EPIOPE: './tcrenc/models/autoencoder_onehot/weights/epitope_model_final_restructed.pth'

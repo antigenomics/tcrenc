@@ -1,14 +1,12 @@
 import pandas as pd
 
 import torch
-from torch import Tensor
 from torch.utils.data import DataLoader
 
 from tcrenc.models.autoencoder import Autoencoder
-import tcrenc.utils.constants as constants
 from tcrenc.models.autoencoder_onehot.encoder_onehot import Encoder_onehot
 from tcrenc.models.autoencoder_onehot.decoder_onehot import Decoder_onehot
-
+import tcrenc.utils.constants as constants
 
 LEN_AA_LIST = len(constants.AA_LIST)
 
@@ -42,20 +40,24 @@ class Autoencoder_onehot(Autoencoder):
         self.decoder = Decoder_onehot(config=config,
                                       seq_type=seq_type)
 
-    def forward(self, x: Tensor) -> Tensor:
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         encoded = self.encoder(x)
         decoded = self.decoder(encoded)
         return decoded
 
-    def make_embeddings_from_seq(self, x: Tensor) -> Tensor:
+    def make_embeddings_from_seq(self, x: torch.Tensor) -> torch.Tensor:
         encoded = self.encoder(x)
         return encoded
 
-    def make_seq_from_embeddings(self, encoded: Tensor) -> Tensor:
+    def make_seq_from_embeddings(self, encoded: torch.Tensor) -> torch.Tensor:
         decoded = self.decoder(encoded)
         return decoded
 
-    def model_process(self, input_dataloader: DataLoader, device: torch.device, criterion, process_type: str) -> Tensor:
+    def model_process(self,
+                      input_dataloader: DataLoader,
+                      device: torch.device,
+                      criterion,
+                      process_type: str) -> torch.Tensor:
 
         if process_type == 'train':
             # from tcrenc.utils.train import model_process
@@ -90,7 +92,7 @@ class Autoencoder_onehot(Autoencoder):
         # TODO make this function
         pass
 
-    def embeddings_data_process(self, encoder_output: Tensor, input_seqs: pd.Series) -> pd.DataFrame:
+    def embeddings_data_process(self, encoder_output: torch.Tensor, input_seqs: pd.Series) -> pd.DataFrame:
         """
         TODO descriprion
         """
