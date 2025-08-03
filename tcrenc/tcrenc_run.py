@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import torch
-from torchtune import config
+from torchtune import config as torchtune_config
 
 from utils.argparsers import run_argparser
 from utils.basic import read_config, filter_input, set_device
@@ -32,7 +32,7 @@ def main():
 
     # Special configurations
     gen_config.update(script_config)
-    loss_function = config.instantiate(gen_config['LOSS_FUNCTION'])
+    loss_function = torchtune_config.instantiate(gen_config['LOSS_FUNCTION'])
 
     inp_data = input_process(args.input, gen_config)
 

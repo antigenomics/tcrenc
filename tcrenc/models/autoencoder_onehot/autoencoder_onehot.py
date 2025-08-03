@@ -57,11 +57,17 @@ class Autoencoder_onehot(Autoencoder):
                       input_dataloader: DataLoader,
                       device: torch.device,
                       criterion,
-                      process_type: str) -> torch.Tensor:
+                      process_type: str,
+                      test_dataloader=None):
 
         if process_type == 'train':
-            # from tcrenc.utils.train import model_process
-            pass
+            from tcrenc.utils.train import model_train
+            model_train(self,
+                        input_dataloader=input_dataloader,
+                        device=device,
+                        criterion=criterion,
+                        config=self.config,
+                        test_dataloader=test_dataloader)
 
         elif process_type == 'validate':
             # rom tcrenc.utils.validate import model_process

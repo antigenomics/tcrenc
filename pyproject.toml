@@ -16,4 +16,5 @@ readme = "README.md"
 
 [project.scripts]
 tcrenc-run = "tcrenc.tcrenc_run:main"
+tcrenc-train = "tcrenc.tcrenc_train:main"
 

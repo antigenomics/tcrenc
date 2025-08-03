@@ -4,10 +4,13 @@ general:
   LINEAR_PART_EPITOPE: 20
   BATCH_SIZE: 64
   LOSS_FUNCTION:
-    _component_: torch.nn.MSELoss
+    _component_: torch.nn.BCEWithLogitsLoss
 train:
   EPOCH_NUM: 100
-  LEARNING_RATE: 1e-3
+  OPTIMIZER:
+    _component_: torch.optim.Adam
+    lr: 1e-4
+    weight_decay: 0
 validate:
   blank: 'blank'
 run:
