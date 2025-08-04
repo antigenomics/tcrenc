@@ -5,41 +5,36 @@ This tool containes pretrained autoencoders for complementary determining region
 Install this project via cloning this repository:
 ```{bash}
 git clone git@github.com:antigenomics/tcrenc.git
+git checkout addingscripts
 ```
+Then install depenpensis from `requirements.txt`
+Then build tool with:
+```{bash}
+python -m pip install .
+```
+Now it is ready to use.
 ## Usage
 
-The use of this project is to interact with it through the run.py file. This file must be run via the command line. In total, this file takes 3 mandatory and 1 optional argument:
-- `input` - requires string with absolute path to the input `.csv` file.
-- `output` - requires path to output directory
-- `embed_type` - requires one of two options (`onehot` or `kidera`). Sequence representation type
-- `residual_block` - requires `true` or `false` (basically `false`). Using residual block layer in convolutional autoencoder (only makes sense if you use kidera factors).
+There are 2 working scripts. `tcrenc-run` - to make embeddings, `tcrenc-train` - to train nn (full: encoder+decoder).
 
-Examples:
+Examples
+Train:
 ```{bash}
-python run.py --input ~/tcrenc/dataset/X_test.csv --output . --embed_type onehot 
+tcrenc-train --input VDJdb --output ./testing2 --embed_type kidera
 ```
-After running this line you will get embeddings for cdr and epitope sequences by using model for one hot representation.
+Run:
 ```{bash}
-python run.py --input ~/tcrenc/dataset/X_test.csv --output . --embed_type kidera --residual_block true
+tcrenc-run --input ./testing/test_data.csv --output ./testing2 --embed_type onehot
 ```
-After running this line you will get embeddings for cdr and epitope sequences by using model for kidera representations with Residual Blocks in architecture.
+
 
 ## Format
 ### Input
-The input file should be a csv file with a clear structure. It should have 2 columns named cdr3 and antigen_epitope. Each observation in these columns is a cdr or epitope sequence, respectively. 
+The input file should be a csv file with a clear structure. It should have 2 columns named `cdr3` and `antigen_epitope`. Each observation in these columns is a cdr or epitope sequence, respectively. 
 
-### Output
-After running our algorithms you will get embeddings of your sequences. The output format depends on the representation you choose.
+`VDJdb` option is available.
 
-If you choose OneHot, you will get 2 files with embeddings for tcr and epitopе respectively. Note that for each sequence where will be $4*latent_dims$ features (Because of 4 variants for gap insertions).
 
-If you choose Kidera, you will get 2 files with embeddings for tcr and epitopе respectively. It is important to note that if you choose to use the Residual block (`residual_block true`), the file name will have the suffix `_residual` at the end. 
-## Final models
-
-Final models for one-hot representation could be find in `modules/modules_one-hot/autoencoder.py`.
-Weights could be found [here](https://github.com/antigenomics/tcrenc/tree/main/models/models_onehot)
-
-If you want to use weights for models using kidera factors - you need to have access to the aldan server.
 
 ## Results
 The results are divided into two folders based on representation. See the `results` folder.
