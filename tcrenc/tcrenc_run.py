@@ -4,8 +4,8 @@ import torch
 from torchtune import config as torchtune_config
 
 from utils.argparsers import run_argparser
-from utils.basic import read_config, filter_input, set_device
-from utils.run import input_process, saving_results
+from utils.basic import read_config, filter_input, set_device, input_process
+from utils.run import saving_results
 
 SCRIPT_TYPE = 'run'
 

@@ -18,9 +18,7 @@ def run_argparser():
     )
     parser.add_argument(
         "--residual_block",
-        type=str,
-        default="false",
-        choices=["true", "false"],
+        action="store_true",
         help="Use residual block for kidera factors representation (default: false)",
     )
 
@@ -58,4 +56,19 @@ def train_argparser():
 
 
 def validate_argrapser():
-    pass
+    parser = argparse.ArgumentParser(description="Check model on input TCR or epitope sequences")
+    parser.add_argument(
+        "--input", type=str, required=True, help="VDJdb option or path to input CSV file"
+    )
+    parser.add_argument(
+        "--output", type=str, required=True, help="Path to output directory"
+    )
+    parser.add_argument(
+        "--embed_type",
+        type=str,
+        required=True,
+        choices=["onehot", "kidera"],
+        help="Type of sequence representation: onehot or kidera factors",
+    )
+
+    return parser.parse_args()

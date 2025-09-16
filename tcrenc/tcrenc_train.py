@@ -4,8 +4,8 @@ from torchtune import config as torchtune_config
 from sklearn.model_selection import train_test_split
 
 from utils.argparsers import train_argparser
-from utils.basic import read_config, filter_input, set_device
-from utils.train import input_process, saving_results
+from utils.basic import read_config, filter_input, set_device, input_process
+from utils.train import saving_results
 
 SCRIPT_TYPE = 'train'
 
@@ -101,8 +101,6 @@ def main():
 
         if args.weights_save:
             saving_results(model_epitope, output_path, args.embed_type, 'epitope')
-
-    print("Script end")
 
 
 if __name__ == '__main__':
