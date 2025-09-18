@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-from torch import Tensor, tensor
+from torch import Tensor, tensor, device
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 
@@ -43,6 +43,20 @@ class Encoder_onehot(Encoder):
 
     def forward(self, x: Tensor) -> Tensor:
         return self.encoder(x)
+
+    def make_embeddings_from_seq(self, input_data: pd.DataFrame, device: device) -> Tensor:
+
+        input_dataloader = self.input_data_process(inp_data=input_data[self.seq_type])
+
+        from tcrenc.utils.run import model_process
+
+        model_output = model_process(self,
+                                     inp_dataloader=input_dataloader,
+                                     device=device)
+
+        embeddings = self.embeddings_data_process(model_output, input_data[self.seq_type])
+
+        return embeddings
 
     def _gap_insertion(self, inp_list: list) -> list:
         """

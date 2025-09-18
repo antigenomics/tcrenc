@@ -45,13 +45,30 @@ class Autoencoder_onehot(Autoencoder):
         decoded = self.decoder(encoded)
         return decoded
 
-    def make_embeddings_from_seq(self, x: torch.Tensor) -> torch.Tensor:
+    def encoder_part(self, x: torch.Tensor) -> torch.Tensor:
         encoded = self.encoder(x)
         return encoded
 
-    def make_seq_from_embeddings(self, encoded: torch.Tensor) -> torch.Tensor:
-        decoded = self.decoder(encoded)
+    def decoder_part(self, x: torch.Tensor) -> torch.Tensor:
+        decoded = self.decoder(x)
         return decoded
+
+    def make_embeddings_from_seq(self, input_data: pd.DataFrame, device: torch.device) -> torch.Tensor:
+        embeddings = self.encoder.make_embeddings_from_seq(input_data=input_data, device=device)
+        return embeddings
+
+    def make_seq_from_embeddings(self, input_embds: torch.Tensor, device: torch.device) -> torch.Tensor:
+        decoded_seqs, decoded = self.decoder.make_seq_from_embeddings(input_embds=input_embds, device=device)
+        return decoded_seqs, decoded
+
+    def validation_on_seqs(self):
+        # что на входе
+        self.make_embeddings_from_seq()
+        # убираем секи
+        self.make_seq_from_embeddings()
+        # запускаем функцию сравнивания секов
+        # print/mb return smth
+        pass
 
     def model_process(self,
                       input_dataloader: DataLoader,
@@ -59,6 +76,9 @@ class Autoencoder_onehot(Autoencoder):
                       criterion,
                       process_type: str,
                       test_dataloader=None):
+        """
+        Пока оставим тут, и согласуем. Перенести в модули легко, а обратно не очень.
+        """
 
         if process_type == 'train':
             from tcrenc.utils.train import model_train
@@ -68,19 +88,6 @@ class Autoencoder_onehot(Autoencoder):
                         criterion=criterion,
                         config=self.config,
                         test_dataloader=test_dataloader)
-
-        elif process_type == 'validate':
-            # rom tcrenc.utils.validate import model_process
-            pass
-
-        elif process_type == 'run':
-            from tcrenc.utils.run import model_process
-            model_output = model_process(self,
-                                         input_dataloader=input_dataloader,
-                                         device=device,
-                                         criterion=criterion,
-                                         )
-            return model_output
 
         else:
             raise ValueError('Unknown process type')
@@ -94,9 +101,11 @@ class Autoencoder_onehot(Autoencoder):
 
         return inp_dataloader
 
-    def reconstructed_data_process(self, reconstructed_data: list) -> list:
-        # TODO make this function
-        pass
+    def reconstructed_data_process(self, model_input_tensor: torch.Tensor, model_output_tensor: torch.Tensor):
+        """
+        """
+        return self.decoder.reconstructed_data_process(model_input=model_input_tensor,
+                                                       model_output=model_output_tensor)
 
     def embeddings_data_process(self, encoder_output: torch.Tensor, input_seqs: pd.Series) -> pd.DataFrame:
         """

@@ -1,13 +1,30 @@
 from pathlib import Path
 
 import torch
-from torchtune import config as torchtune_config
 
 from utils.argparsers import run_argparser
 from utils.basic import read_config, filter_input, set_device, input_process
 from utils.run import saving_results
 
 SCRIPT_TYPE = 'run'
+
+
+def load_model(args):
+    """
+    Here you can add model
+    """
+    if args.embed_type == 'onehot':
+        model_config = read_config('./tcrenc/configs/config_onehot.yaml', script_type=SCRIPT_TYPE)
+        from models.autoencoder_onehot.autoencoder_onehot import Autoencoder_onehot as Model
+
+    elif args.embed_type == 'kidera':
+        model_config = read_config('./tcrenc/configs/config_kidera.yaml', script_type=SCRIPT_TYPE)
+        from models.autoencoder_kidera.autoencoder_kidera import Autoencoder_kidera as Model
+
+    elif args.embed_type == 'atchley':
+        model_config = read_config('./tcrenc/configs/config_atchley.yaml', script_type=SCRIPT_TYPE)
+        # from models.autoencoder_atchley.autoencoder_atchley import Autoencoder_atchley as Model
+    return Model, model_config
 
 
 def main():
@@ -17,22 +34,10 @@ def main():
 
     device = set_device(gen_config['USE_GPU'])
 
-    # Loading model
-    if args.embed_type == 'onehot':
-        script_config = read_config('./tcrenc/configs/config_onehot.yaml', script_type=SCRIPT_TYPE)
-        from models.autoencoder_onehot.autoencoder_onehot import Autoencoder_onehot as Model
-
-    elif args.embed_type == 'kidera':
-        script_config = read_config('./tcrenc/configs/config_kidera.yaml', script_type=SCRIPT_TYPE)
-        from models.autoencoder_kidera.autoencoder_kidera import Autoencoder_kidera as Model
-
-    elif args.embed_type == 'atchley':
-        script_config = read_config('./tcrenc/configs/config_atchley.yaml', script_type=SCRIPT_TYPE)
-        # from models.autoencoder_atchley.autoencoder_atchley import Autoencoder_atchley as Model
+    Model, model_config = load_model(args)
 
     # Special configurations
-    gen_config.update(script_config)
-    loss_function = torchtune_config.instantiate(gen_config['LOSS_FUNCTION'])
+    gen_config.update(model_config)
 
     inp_data = input_process(args.input, gen_config)
 
@@ -40,10 +45,17 @@ def main():
     output_path.mkdir(parents=True, exist_ok=True)
 
     # Processing model based on request
-    if gen_config['cdr3_ex'] is True:
+    if gen_config['cdr3_ex']:
 
-        inp_data_cdr3 = inp_data.cdr3.to_frame()
-        data_cdr3 = filter_input(inp_data_cdr3, gen_config)
+        if args.decoder:
+            data_cdr3 = inp_data.copy()
+            data_cdr3.drop(columns='cdr3', inplace=True)
+
+            if data_cdr3.isnull().values.any():
+                raise ValueError('There is NA values in embeddings data')
+        else:
+            inp_data_cdr3 = inp_data.cdr3.to_frame()
+            data_cdr3 = filter_input(inp_data_cdr3, gen_config)
 
         model_cdr3 = Model(gen_config, seq_type='cdr3')
 
@@ -52,21 +64,26 @@ def main():
                                               weights_only=True))
         model_cdr3.to(device)
 
-        cdr3_dataloader = model_cdr3.input_data_process(inp_data=data_cdr3['cdr3'])
+        if args.decoder:
+            cdr3_df, _ = model_cdr3.make_seq_from_embeddings(input_embds=data_cdr3,
+                                                             device=device)
+        else:
+            cdr3_df = model_cdr3.make_embeddings_from_seq(input_data=data_cdr3,
+                                                          device=device)
 
-        cdr3_output = model_cdr3.model_process(input_dataloader=cdr3_dataloader,
-                                               device=device,
-                                               criterion=loss_function,
-                                               process_type=SCRIPT_TYPE)
+        saving_results(cdr3_df, output_path, args, 'cdr3')
 
-        cdr3_df = model_cdr3.embeddings_data_process(cdr3_output, data_cdr3['cdr3'])
+    if gen_config['epitope_ex']:
 
-        saving_results(cdr3_df, output_path, args.embed_type, data_cdr3['cdr3'].name)
+        if args.decoder:
+            data_epitope = inp_data.copy()
+            data_epitope.drop(columns='antigen_epitope', inplace=True)
 
-    if gen_config['epitope_ex'] is True:
-
-        inp_data_epitope = inp_data.antigen_epitope.to_frame()
-        data_epitope = filter_input(inp_data_epitope, gen_config)
+            if data_epitope.isnull().values.any():
+                raise ValueError('There is NA values in embeddings data')
+        else:
+            inp_data_epitope = inp_data.antigen_epitope.to_frame()
+            data_epitope = filter_input(inp_data_epitope, gen_config)
 
         model_epitope = Model(gen_config, seq_type='antigen_epitope')
 
@@ -75,16 +92,14 @@ def main():
                                                  weights_only=True))
         model_epitope.to(device)
 
-        epitope_dataloader = model_epitope.input_data_process(inp_data=data_epitope['antigen_epitope'])
+        if args.decoder:
+            epitope_df, _ = model_epitope.make_seq_from_embeddings(input_embds=data_epitope,
+                                                                   device=device)
+        else:
+            epitope_df = model_epitope.make_embeddings_from_seq(input_data=data_epitope,
+                                                                device=device)
 
-        epitope_output = model_epitope.model_process(input_dataloader=epitope_dataloader,
-                                                     device=device,
-                                                     criterion=loss_function,
-                                                     process_type=SCRIPT_TYPE)
-
-        epitope_df = model_epitope.embeddings_data_process(epitope_output, data_epitope['antigen_epitope'])
-
-        saving_results(epitope_df, output_path, args.embed_type, data_epitope['antigen_epitope'].name)
+        saving_results(epitope_df, output_path, args, 'antigen_epitope')
 
     print("All files saved!")
 

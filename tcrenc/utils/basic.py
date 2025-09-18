@@ -26,6 +26,7 @@ def filter_input(inp_data: pd.DataFrame, conf: dict) -> pd.DataFrame:
     # Filter CDR3
     filtered_data = inp_data.copy()
     col_names = filtered_data.columns
+    filtered_data.dropna(inplace=True, ignore_index=True)
 
     if 'cdr3' in col_names:
         filtered_data = filtered_data[filtered_data['cdr3'].str.match(r'^C.*[FW]$')]

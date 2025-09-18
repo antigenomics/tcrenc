@@ -21,6 +21,11 @@ def run_argparser():
         action="store_true",
         help="Use residual block for kidera factors representation (default: false)",
     )
+    parser.add_argument(
+        "--decoder",
+        action="store_true",
+        help="Option to use decoder only (default: false)",
+    )
 
     return parser.parse_args()
 
@@ -50,6 +55,16 @@ def train_argparser():
         type=float,
         default=1,
         help="Option to split data to train/test sets",
+    )
+    parser.add_argument(
+        "--encoder_train",
+        action="store_true",
+        help="Option to train only encoder (default: false)",
+    )
+    parser.add_argument(
+        "--decoder_train",
+        action="store_true",
+        help="Option to train only decoder (default: false)",
     )
 
     return parser.parse_args()
