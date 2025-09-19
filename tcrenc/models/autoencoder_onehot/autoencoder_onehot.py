@@ -61,14 +61,21 @@ class Autoencoder_onehot(Autoencoder):
         decoded_seqs, decoded = self.decoder.make_seq_from_embeddings(input_embds=input_embds, device=device)
         return decoded_seqs, decoded
 
-    def validation_on_seqs(self):
-        # что на входе
-        self.make_embeddings_from_seq()
-        # убираем секи
-        self.make_seq_from_embeddings()
-        # запускаем функцию сравнивания секов
-        # print/mb return smth
-        pass
+    def validation_on_seqs(self, input_data: pd.DataFrame, loss_function, device):
+
+        input_dataloader = self.input_data_process(inp_data=input_data[self.seq_type])
+
+        from tcrenc.utils.validate import model_validate
+
+        input_seqs_coded, output_seqs_coded, loss_value = model_validate(self,
+                                                                         input_dataloader=input_dataloader,
+                                                                         device=device,
+                                                                         criterion=loss_function)
+
+        input_seqs = self.reconstructed_data_process(input_seqs_coded)
+        output_seqs = self.reconstructed_data_process(output_seqs_coded)
+
+        return input_seqs, output_seqs, loss_value
 
     def model_process(self,
                       input_dataloader: DataLoader,
@@ -101,11 +108,10 @@ class Autoencoder_onehot(Autoencoder):
 
         return inp_dataloader
 
-    def reconstructed_data_process(self, model_input_tensor: torch.Tensor, model_output_tensor: torch.Tensor):
+    def reconstructed_data_process(self, input_tensor: torch.Tensor):
         """
         """
-        return self.decoder.reconstructed_data_process(model_input=model_input_tensor,
-                                                       model_output=model_output_tensor)
+        return self.decoder.reconstructed_data_process(model_output=input_tensor)
 
     def embeddings_data_process(self, encoder_output: torch.Tensor, input_seqs: pd.Series) -> pd.DataFrame:
         """
