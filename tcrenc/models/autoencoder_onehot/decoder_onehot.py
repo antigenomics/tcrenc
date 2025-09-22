@@ -4,6 +4,7 @@ import pandas as pd
 
 from scipy.stats import entropy
 from torch import Tensor, device, tensor
+import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 
@@ -106,11 +107,39 @@ class Decoder_onehot(Decoder):
 
         return seq_output_list_no_gap
 
+    def _gap_insertion(self, inp_list: list) -> list:
+        """
+        Function to insert gaps to sequences of cdr3 and epitope to positions +3, +4, -3, -4
+        """
+        ext_list = []
+
+        for seq in inp_list:
+            gap_count = self._max_len - len(seq)
+
+            ext_list.append(seq[0:3]+'-'*gap_count+seq[3:])
+            ext_list.append(seq[0:4]+'-'*gap_count+seq[4:])
+            ext_list.append(seq[0:-3]+'-'*gap_count+seq[-3:])
+            ext_list.append(seq[0:-4]+'-'*gap_count+seq[-4:])
+
+        return ext_list
+
+    def _one_hot_code(self, peptide: str):
+        """
+        Return 2d np.array(np.float32): peptide in one-hot representation.
+        """
+        pep_oh_encoded = np.zeros((LEN_AA_LIST, len(peptide)),
+                                  dtype=np.float32)
+
+        for idx, aa in enumerate(peptide):
+            aa_idx = constants.AA_LIST.index(aa)
+            pep_oh_encoded[aa_idx][idx] = 1
+
+        return pep_oh_encoded
+
     def input_data_process(self, input_data: pd.DataFrame):
 
         embeddings = input_data.copy().to_numpy(dtype=np.float32)
-        if embeddings.shape[1] != self.latent_dims * 4:
-            raise ValueError('Wrong embeddings size')
+        self._embds_shape_check(embeddings)
 
         embeddings = embeddings.reshape((embeddings.shape[0]*4, self.latent_dims))
         dataset = TensorDataset(tensor(embeddings))
@@ -120,6 +149,10 @@ class Decoder_onehot(Decoder):
                                 shuffle=False)
 
         return dataloader
+
+    def _embds_shape_check(self, data):
+        if (data.shape[1]) != 4 * self.latent_dims:
+            raise ValueError('Wrong embeddings shape')
 
     def reconstructed_data_process(self, model_output: Tensor):
 
@@ -132,3 +165,65 @@ class Decoder_onehot(Decoder):
         reconstructed_seqs_df = pd.DataFrame({self.seq_type: reconstructed_seqs})
 
         return reconstructed_seqs_df
+
+    def _make_seq_dataloder(self, inp_seq: pd.Series):
+
+        inp_list = inp_seq.to_list()
+
+        # Extend input list with seq's with gaps
+        inp_list_with_gaps = self._gap_insertion(inp_list)
+
+        inp_list_oh = np.zeros((len(inp_list_with_gaps),
+                                LEN_AA_LIST,
+                                self._max_len),
+                               dtype=np.float32)
+
+        # List of seqs with gaps to one-hot representation
+        for idx, seq in enumerate(inp_list_with_gaps):
+            inp_list_oh[idx] = self._one_hot_code(seq)
+
+        seq_dataset = TensorDataset(tensor(inp_list_oh))
+
+        seq_dataloader = DataLoader(seq_dataset,
+                                    batch_size=self.config['BATCH_SIZE'],
+                                    shuffle=False)
+
+        return seq_dataloader
+
+    def model_train(self,
+                    train_data: pd.DataFrame,
+                    device: torch.device,
+                    criterion,
+                    test_data=None):
+
+        self._embds_shape_check(train_data.drop(columns=self.seq_type))
+
+        if test_data is None:
+            seq_train_dataloader = self._make_seq_dataloder(inp_seq=train_data[self.seq_type])
+            seq_test_dataloader = None
+
+            embds_train_dataloader = self.input_data_process(
+                input_data=train_data.drop(columns=self.seq_type)
+                )
+            embds_test_dataloader = None
+        else:
+            seq_train_dataloader = self._make_seq_dataloder(inp_seq=train_data[self.seq_type])
+            seq_test_dataloader = self._make_seq_dataloder(inp_seq=test_data[self.seq_type])
+
+            embds_train_dataloader = self.input_data_process(
+                input_data=train_data.drop(columns=self.seq_type)
+                )
+            embds_test_dataloader = self.input_data_process(
+                input_data=test_data.drop(columns=self.seq_type)
+                )
+
+        from tcrenc.utils.train import part_model_train
+        part_model_train(self,
+                         model_type='decoder',
+                         seq_train_dataloader=seq_train_dataloader,
+                         embds_train_dataloader=embds_train_dataloader,
+                         device=device,
+                         criterion=criterion,
+                         config=self.config,
+                         seq_test_dataloader=seq_test_dataloader,
+                         embds_test_dataloader=embds_test_dataloader)

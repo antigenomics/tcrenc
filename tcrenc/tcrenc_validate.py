@@ -6,27 +6,10 @@ from torchtune import config as torchtune_config
 from utils.argparsers import validate_argrapser
 from utils.basic import read_config, filter_input, set_device, input_process
 from utils.validate import make_report
+from models.models_list import load_model
 
 
 SCRIPT_TYPE = 'run'
-
-
-def load_model(args):
-    """
-    Here you can add model
-    """
-    if args.embed_type == 'onehot':
-        model_config = read_config('./tcrenc/configs/config_onehot.yaml', script_type=SCRIPT_TYPE)
-        from models.autoencoder_onehot.autoencoder_onehot import Autoencoder_onehot as Model
-
-    elif args.embed_type == 'kidera':
-        model_config = read_config('./tcrenc/configs/config_kidera.yaml', script_type=SCRIPT_TYPE)
-        from models.autoencoder_kidera.autoencoder_kidera import Autoencoder_kidera as Model
-
-    elif args.embed_type == 'atchley':
-        model_config = read_config('./tcrenc/configs/config_atchley.yaml', script_type=SCRIPT_TYPE)
-        # from models.autoencoder_atchley.autoencoder_atchley import Autoencoder_atchley as Model
-    return Model, model_config
 
 
 def main():
@@ -36,7 +19,7 @@ def main():
 
     device = set_device(gen_config['USE_GPU'])
 
-    Model, model_config = load_model(args)
+    Model, model_config = load_model(args, script_type=SCRIPT_TYPE)
 
     # Special configurations
     gen_config.update(model_config)

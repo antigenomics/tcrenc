@@ -6,6 +6,8 @@ from sklearn.model_selection import train_test_split
 from utils.argparsers import train_argparser
 from utils.basic import read_config, filter_input, set_device, input_process
 from utils.train import saving_results
+from models.models_list import load_model
+
 
 SCRIPT_TYPE = 'train'
 
@@ -17,30 +19,31 @@ def main():
 
     device = set_device(gen_config['USE_GPU'])
 
-    # Loading model
-    if args.embed_type == 'onehot':
-        script_config = read_config('./tcrenc/configs/config_onehot.yaml', script_type=SCRIPT_TYPE)
-        from models.autoencoder_onehot.autoencoder_onehot import Autoencoder_onehot as Model
+    output_path = Path(args.output)
+    output_path.mkdir(parents=True, exist_ok=True)
 
-    elif args.embed_type == 'kidera':
-        script_config = read_config('./tcrenc/configs/config_kidera.yaml', script_type=SCRIPT_TYPE)
-        from models.autoencoder_kidera.autoencoder_kidera import Autoencoder_kidera as Model
+    Model, model_config = load_model(args, script_type=SCRIPT_TYPE)
 
-    elif args.embed_type == 'atchley':
-        script_config = read_config('./tcrenc/configs/config_atchley.yaml', script_type=SCRIPT_TYPE)
-        # from models.autoencoder_atchley.autoencoder_atchley import Autoencoder_atchley as Model
-
-    # Special configurations
-    gen_config.update(script_config)
+    gen_config.update(model_config)
     loss_function = torchtune_config.instantiate(gen_config['LOSS_FUNCTION'])
 
     inp_data = input_process(args.input, gen_config)
 
-    output_path = Path(args.output)
-    output_path.mkdir(parents=True, exist_ok=True)
+    if not args.encoder_train and not args.decoder_train:
+        full_autoencoder_train(args, inp_data, gen_config,
+                               Model, device, loss_function, output_path)
+    elif args.encoder_train and args.decoder_train:
+        raise ValueError('Chose only one option what to train.')
+    else:
+        if args.input == 'VDJdb':
+            raise ValueError('No VDJdb option for encoder/decoder training')
+        part_autoencoder_train(args, inp_data, gen_config,
+                               Model, device, loss_function, output_path)
 
-    # Processing model based on request
-    if gen_config['cdr3_ex'] is True:
+
+def full_autoencoder_train(args, inp_data, gen_config, Model, device, loss_function, output_path):
+
+    if gen_config['cdr3_ex']:
 
         inp_data_cdr3 = inp_data.cdr3.to_frame()
         data_cdr3 = filter_input(inp_data_cdr3, gen_config)
@@ -55,23 +58,19 @@ def main():
             train_cdr3_dataloader = model_cdr3.input_data_process(inp_data=train_cdr3_set['cdr3'])
             val_cdr3_dataloader = model_cdr3.input_data_process(inp_data=val_cdr3_set['cdr3'])
 
-            model_cdr3.model_process(input_dataloader=train_cdr3_dataloader,
-                                     device=device,
-                                     criterion=loss_function,
-                                     process_type=SCRIPT_TYPE,
-                                     test_dataloader=val_cdr3_dataloader)
         else:
-            cdr3_dataloader = model_cdr3.input_data_process(inp_data=data_cdr3['cdr3'])
+            train_cdr3_dataloader = model_cdr3.input_data_process(inp_data=data_cdr3['cdr3'])
+            val_cdr3_dataloader = None
 
-            model_cdr3.model_process(input_dataloader=cdr3_dataloader,
-                                     device=device,
-                                     criterion=loss_function,
-                                     process_type=SCRIPT_TYPE)
+        model_cdr3.model_train(input_dataloader=train_cdr3_dataloader,
+                               device=device,
+                               criterion=loss_function,
+                               test_dataloader=val_cdr3_dataloader)
 
         if args.weights_save:
             saving_results(model_cdr3, output_path, args.embed_type, 'cdr3')
 
-    if gen_config['epitope_ex'] is True:
+    if gen_config['epitope_ex']:
 
         inp_data_epitope = inp_data.antigen_epitope.to_frame()
         data_epitope = filter_input(inp_data_epitope, gen_config)
@@ -86,18 +85,68 @@ def main():
             train_epitope_dataloader = model_epitope.input_data_process(inp_data=train_epitope_set['antigen_epitope'])
             val_epitope_dataloader = model_epitope.input_data_process(inp_data=val_epitope_set['antigen_epitope'])
 
-            model_epitope.model_process(input_dataloader=train_epitope_dataloader,
-                                        device=device,
-                                        criterion=loss_function,
-                                        process_type=SCRIPT_TYPE,
-                                        test_dataloader=val_epitope_dataloader)
         else:
-            epitope_dataloader = model_epitope.input_data_process(inp_data=data_epitope['antigen_epitope'])
+            train_epitope_dataloader = model_epitope.input_data_process(inp_data=data_epitope['antigen_epitope'])
+            val_epitope_dataloader = None
 
-            model_epitope.model_process(input_dataloader=epitope_dataloader,
-                                        device=device,
-                                        criterion=loss_function,
-                                        process_type=SCRIPT_TYPE)
+        model_epitope.model_train(input_dataloader=train_epitope_dataloader,
+                                  device=device,
+                                  criterion=loss_function,
+                                  test_dataloader=val_epitope_dataloader)
+
+        if args.weights_save:
+            saving_results(model_epitope, output_path, args.embed_type, 'epitope')
+
+
+def part_autoencoder_train(args, inp_data, gen_config, Model, device, loss_function, output_path):
+
+    if gen_config['cdr3_ex'] and gen_config['epitope_ex']:
+        raise ValueError('Only one sequence type for encoder/decoder training')
+
+    if gen_config['cdr3_ex']:
+
+        inp_data_filtered = filter_input(inp_data, gen_config)
+
+        model_cdr3 = Model(gen_config, seq_type='cdr3')
+
+        model_cdr3.to(device)
+
+        if args.split != 1:
+            train_cdr3_set, val_cdr3_set = train_test_split(inp_data_filtered,
+                                                            test_size=1-args.split,
+                                                            random_state=42)
+        else:
+            train_cdr3_set = inp_data_filtered
+            val_cdr3_set = None
+
+        model_cdr3.model_train(train_data=train_cdr3_set,
+                               device=device,
+                               criterion=loss_function,
+                               test_data=val_cdr3_set)
+
+        if args.weights_save:
+            saving_results(model_cdr3, output_path, args.embed_type, 'cdr3')
+
+    if gen_config['epitope_ex']:
+
+        inp_data_filtered = filter_input(inp_data, gen_config)
+
+        model_epitope = Model(gen_config, seq_type='antigen_epitope')
+
+        model_epitope.to(device)
+
+        if args.split != 1:
+            train_epitope_set, val_epitope_set = train_test_split(inp_data_filtered,
+                                                                  test_size=1-args.split,
+                                                                  random_state=42)
+        else:
+            train_epitope_set = inp_data_filtered
+            val_epitope_set = None
+
+        model_epitope.model_train(train_data=train_epitope_set,
+                                  device=device,
+                                  criterion=loss_function,
+                                  test_data=val_epitope_set)
 
         if args.weights_save:
             saving_results(model_epitope, output_path, args.embed_type, 'epitope')

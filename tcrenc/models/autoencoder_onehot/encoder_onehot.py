@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 
+import torch
 from torch import Tensor, tensor, device
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
@@ -128,3 +129,55 @@ class Encoder_onehot(Encoder):
                          axis=1)
 
         return embd
+
+    def _make_embds_dataloader(self, input_embeddings):
+
+        embds_np = input_embeddings.to_numpy(dtype=np.float32)
+        embds_np_rs = embds_np.reshape((embds_np.shape[0]*4, int(embds_np.shape[1]/4)))
+        embds_dataset = TensorDataset(tensor(embds_np_rs))
+        embds_dataloader = DataLoader(embds_dataset,
+                                      batch_size=self.config['BATCH_SIZE'],
+                                      shuffle=False)
+        return embds_dataloader
+
+    def _embds_shape_check(self, data):
+        if (data.shape[1]) != 4 * self.latent_dims:
+            raise ValueError('Wrong embeddings shape')
+
+    def model_train(self,
+                    train_data: pd.DataFrame,
+                    device: torch.device,
+                    criterion,
+                    test_data=None):
+
+        self._embds_shape_check(train_data.drop(columns=self.seq_type))
+
+        if test_data is None:
+            seq_train_dataloader = self.input_data_process(inp_data=train_data[self.seq_type])
+            seq_test_dataloader = None
+
+            embds_train_dataloader = self._make_embds_dataloader(
+                input_embeddings=train_data.drop(columns=self.seq_type)
+                )
+            embds_test_dataloader = None
+        else:
+            seq_train_dataloader = self.input_data_process(inp_data=train_data[self.seq_type])
+            seq_test_dataloader = self.input_data_process(inp_data=test_data[self.seq_type])
+
+            embds_train_dataloader = self._make_embds_dataloader(
+                input_embeddings=train_data.drop(columns=self.seq_type)
+                )
+            embds_test_dataloader = self._make_embds_dataloader(
+                input_embeddings=test_data.drop(columns=self.seq_type)
+                )
+
+        from tcrenc.utils.train import part_model_train
+        part_model_train(self,
+                         model_type='encoder',
+                         seq_train_dataloader=seq_train_dataloader,
+                         embds_train_dataloader=embds_train_dataloader,
+                         device=device,
+                         criterion=criterion,
+                         config=self.config,
+                         seq_test_dataloader=seq_test_dataloader,
+                         embds_test_dataloader=embds_test_dataloader)

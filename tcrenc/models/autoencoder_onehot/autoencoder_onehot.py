@@ -77,27 +77,19 @@ class Autoencoder_onehot(Autoencoder):
 
         return input_seqs, output_seqs, loss_value
 
-    def model_process(self,
-                      input_dataloader: DataLoader,
-                      device: torch.device,
-                      criterion,
-                      process_type: str,
-                      test_dataloader=None):
-        """
-        Пока оставим тут, и согласуем. Перенести в модули легко, а обратно не очень.
-        """
+    def model_train(self,
+                    input_dataloader: DataLoader,
+                    device: torch.device,
+                    criterion,
+                    test_dataloader=None):
 
-        if process_type == 'train':
-            from tcrenc.utils.train import model_train
-            model_train(self,
-                        input_dataloader=input_dataloader,
-                        device=device,
-                        criterion=criterion,
-                        config=self.config,
-                        test_dataloader=test_dataloader)
-
-        else:
-            raise ValueError('Unknown process type')
+        from tcrenc.utils.train import model_train
+        model_train(self,
+                    input_dataloader=input_dataloader,
+                    device=device,
+                    criterion=criterion,
+                    config=self.config,
+                    test_dataloader=test_dataloader)
 
     def input_data_process(self, inp_data: pd.Series) -> DataLoader:
         """
