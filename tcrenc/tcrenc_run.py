@@ -39,6 +39,9 @@ def main():
     # Special configurations
     gen_config.update(model_config)
 
+    if args.decoder and args.input == 'VDJdb':
+        raise ValueError('No VDJdb option for decoder')
+
     inp_data = input_process(args.input, gen_config)
 
     output_path = Path(args.output)
