@@ -17,11 +17,6 @@ def run_argparser():
         help="Type of sequence representation: onehot or kidera factors",
     )
     parser.add_argument(
-        "--residual_block",
-        action="store_true",
-        help="Use residual block for kidera factors representation (default: false)",
-    )
-    parser.add_argument(
         "--decoder",
         action="store_true",
         help="Option to use decoder only (default: false)",
