@@ -1,7 +1,5 @@
 from pathlib import Path
 
-import torch
-
 from utils.argparsers import run_argparser
 from utils.basic import read_config, filter_input, set_device, input_process
 from utils.run import saving_results
@@ -46,9 +44,8 @@ def main():
 
         model_cdr3 = Model(gen_config, seq_type='cdr3')
 
-        model_cdr3.load_state_dict(torch.load(gen_config['WEIGHTS_CDR3'],
-                                              map_location=device,
-                                              weights_only=True))
+        model_cdr3. weight_load(weight_path=gen_config['WEIGHTS_CDR3'],
+                                device=device)
         model_cdr3.to(device)
 
         if args.decoder:
@@ -74,9 +71,8 @@ def main():
 
         model_epitope = Model(gen_config, seq_type='antigen_epitope')
 
-        model_epitope.load_state_dict(torch.load(gen_config['WEIGHTS_EPIOPE'],
-                                                 map_location=device,
-                                                 weights_only=True))
+        model_epitope. weight_load(weight_path=gen_config['WEIGHTS_EPIOPE'],
+                                   device=device)
         model_epitope.to(device)
 
         if args.decoder:
