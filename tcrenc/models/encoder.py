@@ -1,7 +1,5 @@
 from abc import abstractmethod
-import pandas as pd
-from torch import Tensor
-from torch.utils.data import DataLoader
+
 from torch.nn import Module
 
 
@@ -12,13 +10,25 @@ class Encoder(Module):
         pass
 
     @abstractmethod
-    def forward(self, data: Tensor) -> Tensor:
+    def forward(self,):
         pass
 
     @abstractmethod
-    def input_data_process(self, inp_data: pd.Series) -> DataLoader:
+    def weight_load(self,):
         pass
 
     @abstractmethod
-    def embeddings_data_process(self, encoder_output: Tensor, input_seqs: pd.Series) -> pd.DataFrame:
+    def make_embeddings_from_seq(self,):
+        pass
+
+    @abstractmethod
+    def input_data_process(self,):
+        pass
+
+    @abstractmethod
+    def model_train(self,):
+        pass
+
+    @abstractmethod
+    def save_model(self,):
         pass
