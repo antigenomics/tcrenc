@@ -143,7 +143,7 @@ def part_model_train(model,
             test_loss = epoch_test_loss / len(seq_test_dataloader.dataset)
             test_losses.append(test_loss)
 
-        if epoch % 20 == 0:
+        if epoch % 20 == 0 or (epoch + 1) / num_epochs == 1:
             if train_test:
                 print(
                     f"[{epoch}/{num_epochs}] Train Loss: {train_loss:.4f} | Test Loss: {test_loss:.4f}"
@@ -156,8 +156,8 @@ def part_model_train(model,
     print(f'Train for {model.seq_type} finished')
 
 
-def saving_results(model, output_dir, embed_type: str, seqs_type: str) -> None:
+def saving_weights(model, output_dir, embed_type: str, seqs_type: str) -> None:
+
     output_path_suffix = f'weights_{embed_type}_{seqs_type}.pth'
     output_path = output_dir.joinpath(output_path_suffix)
-    print(output_path)
     torch.save(model.state_dict(), output_path)

@@ -1,4 +1,5 @@
 from pathlib import Path
+import pandas as pd
 
 from utils.argparsers import run_argparser
 from utils.basic import read_config, filter_input, set_device, input_process
@@ -24,7 +25,24 @@ def main():
     if args.decoder and args.input == 'VDJdb':
         raise ValueError('No VDJdb option for decoder')
 
-    inp_data = input_process(args.input, gen_config)
+    if args.decoder and not args.epitope and not args.cdr:
+        raise ValueError('Seq type not specified')
+
+    elif args.decoder and args.epitope and args.cdr:
+        raise ValueError('More than one seq type for decoder')
+
+    elif args.decoder and args.cdr:
+        gen_config['cdr3_ex'] = True
+        gen_config['epitope_ex'] = False
+        inp_data = pd.read_csv(args.input)
+
+    elif args.decoder and args.epitope:
+        gen_config['epitope_ex'] = True
+        gen_config['cdr3_ex'] = False
+        inp_data = pd.read_csv(args.input)
+
+    elif not args.decoder:
+        inp_data = input_process(args.input, gen_config)
 
     output_path = Path(args.output)
     output_path.mkdir(parents=True, exist_ok=True)
@@ -34,7 +52,6 @@ def main():
 
         if args.decoder:
             data_cdr3 = inp_data.copy()
-            data_cdr3.drop(columns='cdr3', inplace=True)
 
             if data_cdr3.isnull().values.any():
                 raise ValueError('There is NA values in embeddings data')
@@ -61,7 +78,6 @@ def main():
 
         if args.decoder:
             data_epitope = inp_data.copy()
-            data_epitope.drop(columns='antigen_epitope', inplace=True)
 
             if data_epitope.isnull().values.any():
                 raise ValueError('There is NA values in embeddings data')

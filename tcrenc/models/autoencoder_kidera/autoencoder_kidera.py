@@ -1,12 +1,21 @@
 import pandas as pd
+import numpy as np
+import pickle
+import os
 
 import torch
 from torch.utils.data import DataLoader
+from umap import UMAP
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report
 
 from tcrenc.models.autoencoder import Autoencoder
 from tcrenc.models.autoencoder_kidera.decoder_kidera import Decoder_kidera
 from tcrenc.models.autoencoder_kidera.encoder_kidera import Encoder_kidera
 import tcrenc.utils.constants as constants
+from tcrenc.utils.validate import model_validate
+from tcrenc.utils.train import model_train, saving_weights
 
 
 LEN_AA_LIST = len(constants.AA_LIST)
@@ -55,6 +64,7 @@ class Autoencoder_kidera(Autoencoder):
 
         self.config = config
         self.seq_type = seq_type
+        self.embd_type = 'kidera'
 
         if self.seq_type == 'cdr3':
             self._max_len = self.config['MAX_CDR3_LEN']
@@ -69,8 +79,13 @@ class Autoencoder_kidera(Autoencoder):
 
         self.latent_dims = self.config['LATENT_DIMS']
 
-        self.encoder = Encoder_kidera(config=self.config, seq_type=self.seq_type)
-        self.decoder = Decoder_kidera(config=self.config, seq_type=self.seq_type)
+        self.encoder = Encoder_kidera(config=self.config,
+                                      seq_type=self.seq_type)
+        self.decoder = Decoder_kidera(config=self.config,
+                                      seq_type=self.seq_type)
+
+        self.umap = None
+        self.rfc = None
 
     def forward(self, inp_seq: torch.Tensor) -> torch.Tensor:
         """
@@ -88,43 +103,25 @@ class Autoencoder_kidera(Autoencoder):
         decoded = self.decoder(encoded)
         return decoded
 
-    def make_embeddings_from_seq(self, inp_seq: torch.Tensor) -> torch.Tensor:
-        return self.encoder(inp_seq)
+    def weight_load(self, weight_path: str, device: torch.device):
 
-    def make_seq_from_embeddings(self, encoded: torch.Tensor) -> torch.Tensor:
-        return self.decoder(encoded)
+        self.load_state_dict(torch.load(weight_path,
+                                        map_location=device,
+                                        weights_only=True))
+        # Make path to umap
+        directory = os.path.dirname(weight_path)
 
-    def model_process(self,
-                      input_dataloader: DataLoader,
-                      device: torch.device,
-                      criterion,
-                      process_type: str,
-                      test_dataloader=None):
+        umap_filename = f'umap_{self.embd_type}_{self.seq_type}.pkl'
+        umap_path = os.path.join(directory, umap_filename)
+        with open(umap_path, "rb") as f:
+            self.umap = pickle.load(f)
+            self.decoder.umap = self.umap
 
-        if process_type == 'train':
-            from tcrenc.utils.train import model_train
-            model_train(self,
-                        input_dataloader=input_dataloader,
-                        device=device,
-                        criterion=criterion,
-                        config=self.config,
-                        test_dataloader=test_dataloader)
-
-        elif process_type == 'validate':
-            # rom tcrenc.utils.validate import model_process
-            pass
-
-        elif process_type == 'run':
-            from tcrenc.utils.run import model_process
-            model_output = model_process(self,
-                                         input_dataloader=input_dataloader,
-                                         device=device,
-                                         criterion=criterion,
-                                         )
-            return model_output
-
-        else:
-            raise ValueError('Unknown process type')
+        rfc_filename = f'rfc_{self.embd_type}_{self.seq_type}.pkl'
+        rfc_path = os.path.join(directory, rfc_filename)
+        with open(rfc_path, "rb") as f:
+            self.rfc = pickle.load(f)
+            self.decoder.rfc = self.rfc
 
     def input_data_process(self, inp_data: pd.Series) -> DataLoader:
         """
@@ -132,12 +129,11 @@ class Autoencoder_kidera(Autoencoder):
         It add gaps and ... TODO description
         """
         inp_dataloader = self.encoder.input_data_process(inp_data=inp_data)
-
         return inp_dataloader
 
-    def reconstructed_data_process(self, reconstructed_data: list) -> list:
-        # TODO make this function
-        pass
+    def make_embeddings_from_seq(self, input_data: pd.DataFrame, device: torch.device) -> torch.Tensor:
+        embeddings = self.encoder.make_embeddings_from_seq(input_data=input_data, device=device)
+        return embeddings
 
     def embeddings_data_process(self, encoder_output: torch.Tensor, input_seqs: pd.Series) -> pd.DataFrame:
         """
@@ -146,3 +142,112 @@ class Autoencoder_kidera(Autoencoder):
                                                     input_seqs=input_seqs)
 
         return embd
+
+    def make_seq_from_embeddings(self, input_embds: torch.Tensor, device: torch.device) -> torch.Tensor:
+        decoded_seqs, decoded = self.decoder.make_seq_from_embeddings(input_embds=input_embds, device=device)
+        return decoded_seqs, decoded
+
+    def reconstructed_data_process(self, input_tensor: torch.Tensor):
+        reconstructed_data = self.decoder.reconstructed_data_process(reconstructed_data=input_tensor)
+        return reconstructed_data
+
+    def model_train(self,
+                    input_dataloader: DataLoader,
+                    device: torch.device,
+                    criterion,
+                    input_train_seqs: pd.Series,
+                    test_dataloader=None):
+
+        model_train(self,
+                    input_dataloader=input_dataloader,
+                    device=device,
+                    criterion=criterion,
+                    config=self.config,
+                    test_dataloader=test_dataloader)
+
+        _, output_seqs_coded, _ = model_validate(self,
+                                                 input_dataloader=input_dataloader,
+                                                 device=device,
+                                                 criterion=criterion)
+
+        print(f"Start UMAP training for {self.seq_type}\n\n")
+
+        labels = {x: i for i, x in enumerate(KIDERA_DICT.keys())}
+
+        input_train_seqs = input_train_seqs.apply(self.encoder._gap_insertion)
+        inp_seqs = input_train_seqs.str.cat(sep='')
+
+        model_out_reshaped_labeled = []
+        for num, seq_tensor in enumerate(output_seqs_coded):
+            seq = seq_tensor.squeeze(0).T
+            model_out_reshaped_labeled.extend(
+                  np.column_stack([seq,
+                                   np.array(
+                                       [labels[inp_seqs[num*self._max_len + x]] for x in range(self._max_len)]
+                                       )]))
+
+        df = pd.DataFrame(model_out_reshaped_labeled)
+        df[10] = df[10].astype(int)
+        target = df[10]
+        df_sampled = df.groupby(10, group_keys=False).apply(
+            lambda x: x.sample(n=min(len(x), 20000), random_state=42)
+        )
+        df_sampled.drop(columns=10, inplace=True)
+        df.drop(columns=10, inplace=True)
+
+        self.umap = UMAP(n_neighbors=10, min_dist=0.3, n_jobs=-1,
+                         verbose=False).fit(df_sampled)
+
+        umap_embedding = self.umap.transform(df)
+        print(f"UMAP training for {self.seq_type} finished!\n\n")
+
+        print(f"Start RandomForestClassifier training for {self.seq_type}\n\n")
+        X_train, X_test, y_train, y_test = train_test_split(
+            umap_embedding, target, test_size=0.3, random_state=42
+        )
+
+        self.rfc = RandomForestClassifier(n_estimators=20)
+        self.rfc.fit(X_train, y_train)
+        print(f"RandomForestClassifier training for {self.seq_type} finished!\n\n")
+
+        print("Classification report for full model:\n")
+        print(classification_report(y_test, self.rfc.predict(X_test)))
+
+        self.decoder.umap = self.umap
+        self.decoder.rfc = self.rfc
+
+    def save_model(self, output_dir):
+
+        saving_weights(self, output_dir, self.embd_type, self.seq_type)
+
+        umap_suffix = f'umap_{self.embd_type}_{self.seq_type}.pkl'
+        umap_path = output_dir.joinpath(umap_suffix)
+        with open(umap_path, "wb") as f:
+            pickle.dump(self.umap, f)
+
+        rfc_suffix = f'rfc_{self.embd_type}_{self.seq_type}.pkl'
+        rfc_path = output_dir.joinpath(rfc_suffix)
+        with open(rfc_path, "wb") as f:
+            pickle.dump(self.rfc, f)
+
+    def validation_on_seqs(self, input_data: pd.DataFrame, loss_function, device):
+
+        input_dataloader = self.input_data_process(inp_data=input_data[self.seq_type])
+
+        _, output_seqs_coded, loss_value = model_validate(self,
+                                                          input_dataloader=input_dataloader,
+                                                          device=device,
+                                                          criterion=loss_function)
+
+        input_seqs = input_data[self.seq_type].to_frame()
+        output_seqs = self.reconstructed_data_process(output_seqs_coded)
+
+        return input_seqs, output_seqs, loss_value
+
+    def encoder_part(self, x: torch.Tensor) -> torch.Tensor:
+        encoded = self.encoder(x)
+        return encoded
+
+    def decoder_part(self, x: torch.Tensor) -> torch.Tensor:
+        decoded = self.decoder(x)
+        return decoded

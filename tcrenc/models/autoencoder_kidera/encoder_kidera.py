@@ -7,6 +7,8 @@ from torch.utils.data import DataLoader, TensorDataset
 
 from tcrenc.models.encoder import Encoder
 import tcrenc.utils.constants as constants
+from tcrenc.utils.run import model_process
+from tcrenc.utils.train import part_model_train, saving_weights
 
 
 LEN_AA_LIST = len(constants.AA_LIST)
@@ -24,6 +26,7 @@ class Encoder_kidera(Encoder):
 
         self.config = config
         self.seq_type = seq_type
+        self.embd_type = 'kidera'
 
         if self.seq_type == 'cdr3':
             self._max_len = self.config['MAX_CDR3_LEN']
@@ -56,6 +59,103 @@ class Encoder_kidera(Encoder):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.linear_encode(self.encoder(x))
+
+    def weight_load(self, weight_path: str, device: torch.device):
+
+        self.load_state_dict(torch.load(weight_path,
+                                        map_location=device,
+                                        weights_only=True))
+
+    def make_embeddings_from_seq(self, input_data: pd.DataFrame, device: torch.device) -> torch.Tensor:
+
+        input_dataloader = self.input_data_process(inp_data=input_data[self.seq_type])
+
+        model_output = model_process(self,
+                                     inp_dataloader=input_dataloader,
+                                     device=device)
+
+        embeddings = self.embeddings_data_process(model_output,
+                                                  input_data[self.seq_type])
+
+        return embeddings
+
+    def input_data_process(self, inp_data: pd.Series) -> DataLoader:
+        """
+        Main function to prepare torch DataLoader for input pandas Series, consist of 'cdr3' or 'antigen_epitope' sequences.
+        It add gaps and ... TODO description
+        """
+        data = inp_data.copy()
+
+        data = data.apply(self._gap_insertion)
+        data_tensor = torch.tensor(
+            np.stack(data
+                     .map(lambda seq: self._sequence_to_factor(seq))
+                     .values,
+                     axis=0,
+                     ),
+            dtype=torch.float32,
+        ).unsqueeze(1)
+
+        inp_dataset = TensorDataset(data_tensor)
+
+        inp_dataloader = DataLoader(inp_dataset,
+                                    batch_size=self.config['BATCH_SIZE'],
+                                    shuffle=False)
+
+        return inp_dataloader
+
+    def embeddings_data_process(self, encoder_output: torch.Tensor, input_seqs: pd.Series) -> pd.DataFrame:
+        """
+        TODO descriprion
+        """
+
+        embd = pd.concat([pd.DataFrame(encoder_output),
+                          input_seqs.to_frame()],
+                         axis=1)
+
+        return embd
+
+    def model_train(self,
+                    train_data: pd.DataFrame,
+                    device: torch.device,
+                    criterion,
+                    input_train_seqs: pd.Series,
+                    test_data=None):
+
+        self._embds_shape_check(train_data.drop(columns=self.seq_type))
+
+        if test_data is None:
+            seq_train_dataloader = self.input_data_process(inp_data=train_data[self.seq_type])
+            seq_test_dataloader = None
+
+            embds_train_dataloader = self._make_embds_dataloader(
+                input_embeddings=train_data.drop(columns=self.seq_type)
+                )
+            embds_test_dataloader = None
+        else:
+            seq_train_dataloader = self.input_data_process(inp_data=train_data[self.seq_type])
+            seq_test_dataloader = self.input_data_process(inp_data=test_data[self.seq_type])
+
+            embds_train_dataloader = self._make_embds_dataloader(
+                input_embeddings=train_data.drop(columns=self.seq_type)
+                )
+            embds_test_dataloader = self._make_embds_dataloader(
+                input_embeddings=test_data.drop(columns=self.seq_type)
+                )
+
+        part_model_train(self,
+                         model_type='encoder',
+                         seq_train_dataloader=seq_train_dataloader,
+                         embds_train_dataloader=embds_train_dataloader,
+                         device=device,
+                         criterion=criterion,
+                         config=self.config,
+                         seq_test_dataloader=seq_test_dataloader,
+                         embds_test_dataloader=embds_test_dataloader)
+
+    def save_model(self, output_dir):
+
+        saving_weights(self, output_dir, self.embd_type, self.seq_type)
 
     def _gap_insertion(self, inp_seq: str) -> str:
 
@@ -96,38 +196,20 @@ class Encoder_kidera(Encoder):
                 + suff
             )
 
-    def _sequence_to_factor(self, sequence: str) -> np.array:
+    def _sequence_to_factor(self, sequence: str) -> np.ndarray:
         """Convert amino acid sequence to Kidera factors."""
-        return np.array([KIDERA_DICT[aa] for aa in sequence], dtype=np.float32).T
+        return np.array([KIDERA_DICT[aa] for aa in sequence],
+                        dtype=np.float32).T
 
-    def input_data_process(self, inp_data: pd.Series) -> DataLoader:
-        """
-        Main function to prepare torch DataLoader for input pandas Series, consist of 'cdr3' or 'antigen_epitope' sequences.
-        It add gaps and ... TODO description
-        """
-        data = inp_data.copy()
-        data = data.apply(self._gap_insertion)
-        data_tensor = torch.tensor(
-            np.stack(data
-                     .map(lambda seq: self._sequence_to_factor(seq))
-                     .values,
-                     axis=0,
-                     ),
-            dtype=torch.float32,
-        ).unsqueeze(1)
+    def _embds_shape_check(self, data):
+        if (data.shape[1]) != self.latent_dims:
+            raise ValueError('Wrong embeddings shape')
 
-        inp_dataloader = DataLoader(TensorDataset(data_tensor),
-                                    batch_size=self.config['BATCH_SIZE'])
+    def _make_embds_dataloader(self, input_embeddings):
 
-        return inp_dataloader
-
-    def embeddings_data_process(self, encoder_output: torch.Tensor, input_seqs: pd.Series) -> pd.DataFrame:
-        """
-        TODO descriprion
-        """
-
-        embd = pd.concat([pd.DataFrame(encoder_output),
-                          input_seqs.to_frame()],
-                         axis=1)
-
-        return embd
+        embds_np = input_embeddings.to_numpy(dtype=np.float32)
+        embds_dataset = TensorDataset(torch.tensor(embds_np))
+        embds_dataloader = DataLoader(embds_dataset,
+                                      batch_size=self.config['BATCH_SIZE'],
+                                      shuffle=False)
+        return embds_dataloader

@@ -21,6 +21,16 @@ def run_argparser():
         action="store_true",
         help="Option to use decoder only (default: false)",
     )
+    parser.add_argument(
+        "--cdr",
+        action="store_true",
+        help="Option to specify decoder seq type (default: false)",
+    )
+    parser.add_argument(
+        "--epitope",
+        action="store_true",
+        help="Option to specify decoder seq type (default: false)",
+    )
 
     return parser.parse_args()
 
