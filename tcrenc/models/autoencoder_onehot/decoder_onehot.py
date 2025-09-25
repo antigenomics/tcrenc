@@ -19,7 +19,8 @@ LEN_AA_LIST = len(constants.AA_LIST)
 class Decoder_onehot(Decoder):
     def __init__(self,
                  config: dict,
-                 seq_type: str):
+                 seq_type: str,
+                 device: torch.device):
         """
         TODO description
         """
@@ -45,6 +46,8 @@ class Decoder_onehot(Decoder):
                       out_features=self.input_dims),
             nn.Unflatten(1, (LEN_AA_LIST, int(self.input_dims/LEN_AA_LIST))),
         )
+
+        self.to(device)
 
     def forward(self, encoded: torch.Tensor) -> torch.Tensor:
         return self.decoder(encoded)

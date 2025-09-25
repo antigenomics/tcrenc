@@ -17,7 +17,8 @@ LEN_AA_LIST = len(constants.AA_LIST)
 class Autoencoder_onehot(Autoencoder):
     def __init__(self,
                  config: dict,
-                 seq_type: str):
+                 seq_type: str,
+                 device: torch.device):
         """
         TODO description
         """
@@ -39,10 +40,14 @@ class Autoencoder_onehot(Autoencoder):
         self.latent_dims = self.config['LATENT_DIMS']
 
         self.encoder = Encoder_onehot(config=config,
-                                      seq_type=seq_type)
+                                      seq_type=seq_type,
+                                      device=device)
 
         self.decoder = Decoder_onehot(config=config,
-                                      seq_type=seq_type)
+                                      seq_type=seq_type,
+                                      device=device)
+
+        self.to(device)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         encoded = self.encoder(x)

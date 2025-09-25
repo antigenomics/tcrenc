@@ -18,7 +18,8 @@ KIDERA_DICT = constants.AA_LIST_KIDERA_FACTORS_scaled
 class Encoder_kidera(Encoder):
     def __init__(self,
                  config: dict,
-                 seq_type: str):
+                 seq_type: str,
+                 device: torch.device):
         """
         TODO description
         """
@@ -56,6 +57,8 @@ class Encoder_kidera(Encoder):
         self.linear_encode = nn.Sequential(
             nn.Linear(128*10*self.linear_part, 1024), nn.ReLU(), nn.Linear(1024, self.latent_dims)
         )
+
+        self.to(device)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.linear_encode(self.encoder(x))

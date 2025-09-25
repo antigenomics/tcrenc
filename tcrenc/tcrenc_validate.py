@@ -35,11 +35,11 @@ def main():
         inp_data_cdr3 = inp_data.cdr3.to_frame()
         data_cdr3 = filter_input(inp_data_cdr3, gen_config)
 
-        model_cdr3 = Model(gen_config, seq_type='cdr3')
+        model_cdr3 = Model(gen_config, seq_type='cdr3',
+                           device=device)
 
         model_cdr3. weight_load(weight_path=gen_config['WEIGHTS_CDR3'],
                                 device=device)
-        model_cdr3.to(device)
 
         input_seqs, output_seqs, loss_value = model_cdr3.validation_on_seqs(
             input_data=data_cdr3,
@@ -60,11 +60,11 @@ def main():
         inp_data_epitope = inp_data.antigen_epitope.to_frame()
         data_epitope = filter_input(inp_data_epitope, gen_config)
 
-        model_epitope = Model(gen_config, seq_type='antigen_epitope')
+        model_epitope = Model(gen_config, seq_type='antigen_epitope',
+                              device=device)
 
         model_epitope. weight_load(weight_path=gen_config['WEIGHTS_EPIOPE'],
                                    device=device)
-        model_epitope.to(device)
 
         input_seqs, output_seqs, loss_value = model_epitope.validation_on_seqs(
             input_data=data_epitope,

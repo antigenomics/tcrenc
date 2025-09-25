@@ -17,7 +17,8 @@ LEN_AA_LIST = len(constants.AA_LIST)
 class Encoder_onehot(Encoder):
     def __init__(self,
                  config: dict,
-                 seq_type: str):
+                 seq_type: str,
+                 device: torch.device):
         """
         TODO description
         """
@@ -43,6 +44,8 @@ class Encoder_onehot(Encoder):
             nn.Linear(in_features=self.input_dims,
                       out_features=self.latent_dims),
         )
+
+        self.to(device)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.encoder(x)

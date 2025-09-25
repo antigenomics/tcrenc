@@ -47,9 +47,7 @@ def full_autoencoder_train(args, inp_data, gen_config, Model, device, loss_funct
         inp_data_cdr3 = inp_data.cdr3.to_frame()
         data_cdr3 = filter_input(inp_data_cdr3, gen_config)
 
-        model_cdr3 = Model(gen_config, seq_type='cdr3')
-
-        model_cdr3.to(device)
+        model_cdr3 = Model(gen_config, seq_type='cdr3', device=device)
 
         if args.split != 1:
             train_cdr3_set, val_cdr3_set = train_test_split(data_cdr3, test_size=1-args.split, random_state=42)
@@ -76,20 +74,24 @@ def full_autoencoder_train(args, inp_data, gen_config, Model, device, loss_funct
         inp_data_epitope = inp_data.antigen_epitope.to_frame()
         data_epitope = filter_input(inp_data_epitope, gen_config)
 
-        model_epitope = Model(gen_config, seq_type='antigen_epitope')
-
-        model_epitope.to(device)
+        model_epitope = Model(gen_config, seq_type='antigen_epitope',
+                              device=device)
 
         if args.split != 1:
-            train_epitope_set, val_epitope_set = train_test_split(data_epitope, test_size=1-args.split, random_state=42)
+            train_epitope_set, val_epitope_set = train_test_split(data_epitope,
+                                                                  test_size=1-args.split,
+                                                                  random_state=42)
 
-            train_epitope_dataloader = model_epitope.input_data_process(inp_data=train_epitope_set['antigen_epitope'])
-            val_epitope_dataloader = model_epitope.input_data_process(inp_data=val_epitope_set['antigen_epitope'])
+            train_epitope_dataloader = model_epitope.input_data_process(
+                inp_data=train_epitope_set['antigen_epitope'])
+            val_epitope_dataloader = model_epitope.input_data_process(
+                inp_data=val_epitope_set['antigen_epitope'])
 
         else:
             train_epitope_set = data_epitope
             val_epitope_set = None
-            train_epitope_dataloader = model_epitope.input_data_process(inp_data=data_epitope['antigen_epitope'])
+            train_epitope_dataloader = model_epitope.input_data_process(
+                inp_data=data_epitope['antigen_epitope'])
             val_epitope_dataloader = None
 
         model_epitope.model_train(input_dataloader=train_epitope_dataloader,
@@ -111,9 +113,7 @@ def part_autoencoder_train(args, inp_data, gen_config, Model, device, loss_funct
 
         inp_data_filtered = filter_input(inp_data, gen_config)
 
-        model_cdr3 = Model(gen_config, seq_type='cdr3')
-
-        model_cdr3.to(device)
+        model_cdr3 = Model(gen_config, seq_type='cdr3', device=device)
 
         if args.split != 1:
             train_cdr3_set, val_cdr3_set = train_test_split(inp_data_filtered,
@@ -136,9 +136,8 @@ def part_autoencoder_train(args, inp_data, gen_config, Model, device, loss_funct
 
         inp_data_filtered = filter_input(inp_data, gen_config)
 
-        model_epitope = Model(gen_config, seq_type='antigen_epitope')
-
-        model_epitope.to(device)
+        model_epitope = Model(gen_config, seq_type='antigen_epitope',
+                              device=device)
 
         if args.split != 1:
             train_epitope_set, val_epitope_set = train_test_split(inp_data_filtered,

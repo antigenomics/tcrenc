@@ -53,7 +53,8 @@ class Autoencoder_kidera(Autoencoder):
 
     def __init__(self,
                  config: dict,
-                 seq_type: str):
+                 seq_type: str,
+                 device: torch.device):
         """
         Initializes the convolutional autoencoder.
 
@@ -80,12 +81,17 @@ class Autoencoder_kidera(Autoencoder):
         self.latent_dims = self.config['LATENT_DIMS']
 
         self.encoder = Encoder_kidera(config=self.config,
-                                      seq_type=self.seq_type)
+                                      seq_type=self.seq_type,
+                                      device=device)
+
         self.decoder = Decoder_kidera(config=self.config,
-                                      seq_type=self.seq_type)
+                                      seq_type=self.seq_type,
+                                      device=device)
 
         self.umap = None
         self.rfc = None
+
+        self.to(device)
 
     def forward(self, inp_seq: torch.Tensor) -> torch.Tensor:
         """

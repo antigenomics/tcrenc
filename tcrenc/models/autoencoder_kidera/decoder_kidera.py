@@ -23,7 +23,8 @@ KIDERA_DICT = constants.AA_LIST_KIDERA_FACTORS_scaled
 class Decoder_kidera(Decoder):
     def __init__(self,
                  config: dict,
-                 seq_type: str):
+                 seq_type: str,
+                 device: torch.device):
         """
         TODO description
         """
@@ -64,6 +65,8 @@ class Decoder_kidera(Decoder):
 
         self.umap = None
         self.rfc = None
+
+        self.to(device)
 
     def forward(self, encoded: torch.Tensor) -> torch.Tensor:
         return self.decoder(self.linear_decode(encoded))
