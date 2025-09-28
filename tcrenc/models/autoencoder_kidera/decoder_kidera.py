@@ -2,10 +2,12 @@ import pandas as pd
 import numpy as np
 import pickle
 import os
+from pathlib import Path
 
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
+from omegaconf.errors import ConfigKeyError
 from umap import UMAP
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
@@ -38,10 +40,20 @@ class Decoder_kidera(Decoder):
             self._max_len = self.config['MAX_CDR3_LEN']
             self.input_dims = self._max_len * LEN_AA_LIST
             self.linear_part = self.config['LINEAR_PART_CDR3']
+            try:
+                self.weight_path = self.config['WEIGHTS_CDR3']
+            except ConfigKeyError:
+                self.weight_path = None
+
         elif self.seq_type == 'antigen_epitope':
             self._max_len = self.config['MAX_EPITOPE_LEN']
             self.input_dims = self._max_len * LEN_AA_LIST
             self.linear_part = self.config['LINEAR_PART_EPITOPE']
+            try:
+                self.weight_path = self.config['WEIGHTS_EPIOPE']
+            except ConfigKeyError:
+                self.weight_path = None
+
         else:
             raise ValueError('Unknown seq type for this model.')
 
@@ -62,7 +74,7 @@ class Decoder_kidera(Decoder):
             nn.ConvTranspose2d(32, 1, kernel_size=3, padding=1),
             nn.Sigmoid(),
         )
-
+        self.device = device
         self.umap = None
         self.rfc = None
 
@@ -71,14 +83,15 @@ class Decoder_kidera(Decoder):
     def forward(self, encoded: torch.Tensor) -> torch.Tensor:
         return self.decoder(self.linear_decode(encoded))
 
-    def weight_load(self, weight_path: str, device: torch.device):
-
-        self.load_state_dict(torch.load(weight_path,
-                                        map_location=device,
+    def weight_load(self) -> None:
+        """
+        """
+        self.load_state_dict(torch.load(self.weight_path,
+                                        map_location=self.device,
                                         weights_only=True))
 
         # Make path to umap
-        directory = os.path.dirname(weight_path)
+        directory = os.path.dirname(self.weight_path)
 
         umap_filename = f'umap_{self.embd_type}_{self.seq_type}.pkl'
         umap_path = os.path.join(directory, umap_filename)
@@ -91,7 +104,7 @@ class Decoder_kidera(Decoder):
         with open(rfc_path, "rb") as f:
             self.rfc = pickle.load(f)
 
-    def input_data_process(self, input_data: pd.DataFrame):
+    def input_data_process(self, input_data: pd.DataFrame) -> DataLoader:
 
         embeddings = input_data.copy().to_numpy(dtype=np.float32)
         self._embds_shape_check(embeddings)
@@ -103,21 +116,21 @@ class Decoder_kidera(Decoder):
 
         return dataloader
 
-    def make_seq_from_embeddings(self, input_embds: pd.DataFrame,
-                                 device: torch.device) -> torch.Tensor:
+    def make_seq_from_embeddings(self, input_embds: pd.DataFrame) -> pd.DataFrame:
 
         input_dataloader = self.input_data_process(input_data=input_embds)
 
         model_output = model_process(self,
                                      inp_dataloader=input_dataloader,
-                                     device=device)
+                                     device=self.device)
 
         seqs = self.reconstructed_data_process(model_output)
 
-        return seqs, model_output
+        return seqs
 
-    def reconstructed_data_process(self, reconstructed_data):
-
+    def reconstructed_data_process(self, reconstructed_data: torch.Tensor) -> pd.DataFrame:
+        """
+        """
         def_dict = {i: x for i, x in enumerate(KIDERA_DICT.keys())}
 
         reshaped_data = []
@@ -147,10 +160,9 @@ class Decoder_kidera(Decoder):
 
     def model_train(self,
                     train_data: pd.DataFrame,
-                    device: torch.device,
                     criterion,
                     input_train_seqs: pd.Series,
-                    test_data=None):
+                    test_data=None) -> None:
 
         self._embds_shape_check(train_data.drop(columns=self.seq_type))
 
@@ -177,7 +189,7 @@ class Decoder_kidera(Decoder):
                          model_type='decoder',
                          seq_train_dataloader=seq_train_dataloader,
                          embds_train_dataloader=embds_train_dataloader,
-                         device=device,
+                         device=self.device,
                          criterion=criterion,
                          config=self.config,
                          seq_test_dataloader=seq_test_dataloader,
@@ -185,13 +197,13 @@ class Decoder_kidera(Decoder):
 
         model_output = model_process(self,
                                      inp_dataloader=embds_train_dataloader,
-                                     device=device)
+                                     device=self.device)
 
         print(f"Start UMAP training for {self.seq_type}")
 
         labels = {x: i for i, x in enumerate(KIDERA_DICT.keys())}
 
-        input_train_seqs = input_train_seqs.apply(self.encoder._gap_insertion)
+        input_train_seqs = input_train_seqs.apply(self._gap_insertion)
         inp_seqs = input_train_seqs.str.cat(sep='')
 
         model_out_reshaped_labeled = []
@@ -227,8 +239,29 @@ class Decoder_kidera(Decoder):
         print("Classification report for full model:\n")
         print(classification_report(y_test, self.rfc.predict(X_test)))
 
-    def save_model(self, output_dir):
+    def validation_on_seqs(self, input_data: pd.DataFrame, loss_function):
+        """
+        """
 
+        input_seqs = input_data[self.seq_type].to_frame()
+        embds = input_data.copy().drop(columns=self.seq_type)
+        output_seqs = self.make_seq_from_embeddings(input_embds=embds)
+
+        inp_seq_dataloader = self._make_seq_dataloder(inp_seq=input_seqs[self.seq_type])
+        out_seq_dataloader = self._make_seq_dataloder(inp_seq=output_seqs[self.seq_type])
+
+        loss_value, num_batches = 0, 0
+        for (inp_seq, out_seq) in zip(inp_seq_dataloader, out_seq_dataloader):
+            loss = loss_function(inp_seq, out_seq)
+            loss_value += loss.item()
+            num_batches += 1
+        loss_value /= num_batches
+
+        return input_seqs, output_seqs, loss_value
+
+    def save_model(self, output_dir: Path) -> None:
+        """
+        """
         saving_weights(self, output_dir, self.embd_type, self.seq_type)
 
         umap_suffix = f'umap_{self.embd_type}_{self.seq_type}.pkl'
@@ -241,7 +274,7 @@ class Decoder_kidera(Decoder):
         with open(rfc_path, "wb") as f:
             pickle.dump(self.rfc, f)
 
-    def _gap_removal(self, seq_output_list):
+    def _gap_removal(self, seq_output_list: list) -> list:
 
         seq_output_list_no_gap = []
         for seq in seq_output_list:
@@ -249,11 +282,11 @@ class Decoder_kidera(Decoder):
 
         return seq_output_list_no_gap
 
-    def _embds_shape_check(self, data):
+    def _embds_shape_check(self, data: pd.DataFrame) -> None:
         if (data.shape[1]) != self.latent_dims:
             raise ValueError('Wrong embeddings shape')
 
-    def _make_seq_dataloder(self, inp_seq: pd.Series):
+    def _make_seq_dataloder(self, inp_seq: pd.Series) -> DataLoader:
 
         data = inp_seq.copy()
 

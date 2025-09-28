@@ -71,6 +71,16 @@ def train_argparser():
         action="store_true",
         help="Option to train only decoder (default: false)",
     )
+    parser.add_argument(
+        "--cdr",
+        action="store_true",
+        help="Option to specify VDJdb seq type",
+    )
+    parser.add_argument(
+        "--epitope",
+        action="store_true",
+        help="Option to specify VDJdb seq type",
+    )
 
     return parser.parse_args()
 
@@ -89,6 +99,21 @@ def validate_argrapser():
         required=True,
         choices=["onehot", "kidera"],
         help="Type of sequence representation: onehot or kidera factors",
+    )
+    parser.add_argument(
+        "--decoder",
+        action="store_true",
+        help="Option to use decoder only (default: false)",
+    )
+    parser.add_argument(
+        "--cdr",
+        action="store_true",
+        help="Option to specify VDJdb seq type",
+    )
+    parser.add_argument(
+        "--epitope",
+        action="store_true",
+        help="Option to specify VDJdb seq type",
     )
 
     return parser.parse_args()

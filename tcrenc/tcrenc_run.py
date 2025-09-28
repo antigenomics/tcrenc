@@ -4,34 +4,26 @@ import pandas as pd
 from utils.argparsers import run_argparser
 from utils.basic import read_config, filter_input, set_device, input_process
 from utils.run import saving_results
-from models.models_list import load_model
-
+from models.models_list import load_model_for_run
 
 SCRIPT_TYPE = 'run'
 
 
-def main():
+def main(args=None):
     args = run_argparser()
 
-    gen_config = read_config('./tcrenc/configs/config_general.yaml')
+    gen_config = read_config('tcrenc/configs/config_general.yaml')
 
     device = set_device(gen_config['USE_GPU'])
 
-    Model, model_config = load_model(args, script_type=SCRIPT_TYPE)
+    Model, model_config = load_model_for_run(args, script_type=SCRIPT_TYPE)
 
     # Special configurations
     gen_config.update(model_config)
 
-    if args.decoder and args.input == 'VDJdb':
-        raise ValueError('No VDJdb option for decoder')
+    args_check(args)
 
-    if args.decoder and not args.epitope and not args.cdr:
-        raise ValueError('Seq type not specified')
-
-    elif args.decoder and args.epitope and args.cdr:
-        raise ValueError('More than one seq type for decoder')
-
-    elif args.decoder and args.cdr:
+    if args.decoder and args.cdr:
         gen_config['cdr3_ex'] = True
         gen_config['epitope_ex'] = False
         inp_data = pd.read_csv(args.input)
@@ -61,15 +53,12 @@ def main():
 
         model_cdr3 = Model(gen_config, seq_type='cdr3', device=device)
 
-        model_cdr3. weight_load(weight_path=gen_config['WEIGHTS_CDR3'],
-                                device=device)
+        model_cdr3. weight_load()
 
         if args.decoder:
-            cdr3_df, _ = model_cdr3.make_seq_from_embeddings(input_embds=data_cdr3,
-                                                             device=device)
+            cdr3_df = model_cdr3.make_seq_from_embeddings(input_embds=data_cdr3)
         else:
-            cdr3_df = model_cdr3.make_embeddings_from_seq(input_data=data_cdr3,
-                                                          device=device)
+            cdr3_df = model_cdr3.make_embeddings_from_seq(input_data=data_cdr3)
 
         saving_results(cdr3_df, output_path, args, 'cdr3')
 
@@ -87,19 +76,28 @@ def main():
         model_epitope = Model(gen_config, seq_type='antigen_epitope',
                               device=device)
 
-        model_epitope. weight_load(weight_path=gen_config['WEIGHTS_EPIOPE'],
-                                   device=device)
+        model_epitope. weight_load()
 
         if args.decoder:
-            epitope_df, _ = model_epitope.make_seq_from_embeddings(input_embds=data_epitope,
-                                                                   device=device)
+            epitope_df = model_epitope.make_seq_from_embeddings(input_embds=data_epitope)
         else:
-            epitope_df = model_epitope.make_embeddings_from_seq(input_data=data_epitope,
-                                                                device=device)
+            epitope_df = model_epitope.make_embeddings_from_seq(input_data=data_epitope)
 
         saving_results(epitope_df, output_path, args, 'antigen_epitope')
 
     print("All files saved!")
+
+
+def args_check(args):
+
+    if args.decoder and args.input == 'VDJdb':
+        raise ValueError('No VDJdb option for decoder')
+
+    if args.decoder and not args.epitope and not args.cdr:
+        raise ValueError('Seq type not specified')
+
+    if args.decoder and args.epitope and args.cdr:
+        raise ValueError('More than one seq type for decoder')
 
 
 if __name__ == '__main__':
