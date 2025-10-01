@@ -6,15 +6,18 @@ general:
   LOSS_FUNCTION:
     _component_: torch.nn.BCEWithLogitsLoss
 train:
-  EPOCH_NUM: 100
+  EPOCH_NUM: 2
   OPTIMIZER:
     _component_: torch.optim.Adam
     lr: 1e-4
     weight_decay: 0
 validate:
-  blank: 'blank'
-run:
-  WEIGHTS_CDR3: './tcrenc/models/autoencoder_kidera/weights/cdr3_restructed.pth'
+  WEIGHTS_CDR3: './tcrenc/models/autoencoder_kidera/weights/weights_kidera_cdr3.pth'
   # weights on server path projects/tcr_nlp/conv_autoencoder/conv/cdr3.pth. Should be update. See examples/Weights_update.ipynb
-  WEIGHTS_EPIOPE: './tcrenc/models/autoencoder_kidera/weights/epitope_restructed.pth'
+  WEIGHTS_EPIOPE: './tcrenc/models/autoencoder_kidera/weights/weights_kidera_antigen_epitope.pth'
+  # weights on server path projects/tcr_nlp/conv_autoencoder/conv/epitope.pth Should be update. See examples/Weights_update.ipynb
+run:
+  WEIGHTS_CDR3: './tcrenc/models/autoencoder_kidera/weights/weights_kidera_cdr3.pth'
+  # weights on server path projects/tcr_nlp/conv_autoencoder/conv/cdr3.pth. Should be update. See examples/Weights_update.ipynb
+  WEIGHTS_EPIOPE: './tcrenc/models/autoencoder_kidera/weights/weights_kidera_antigen_epitope.pth'
   # weights on server path projects/tcr_nlp/conv_autoencoder/conv/epitope.pth Should be update. See examples/Weights_update.ipynb

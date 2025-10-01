@@ -1,4 +1,3 @@
----
 general:
   BATCH_SIZE: 400
   LOSS_FUNCTION:
@@ -7,10 +6,11 @@ train:
   EPOCH_NUM: 200
   OPTIMIZER:
     _component_: torch.optim.Adam
-    lr: 1e-4
+    lr: 0.0001
     weight_decay: 0
 validate:
-  blank: 'blank'
+  WEIGHTS_CDR3: tcrenc/models/autoencoder_onehot/weights/cdr3_model_final_restructed.pth
+  WEIGHTS_EPIOPE: ./tcrenc/models/autoencoder_onehot/weights/epitope_model_final_restructed.pth
 run:
-  WEIGHTS_CDR3: './tcrenc/models/autoencoder_onehot/weights/cdr3_model_final_restructed.pth'
-  WEIGHTS_EPIOPE: './tcrenc/models/autoencoder_onehot/weights/epitope_model_final_restructed.pth'
+  WEIGHTS_CDR3: ./tcrenc/models/autoencoder_onehot/weights/cdr3_model_final_restructed.pth
+  WEIGHTS_EPIOPE: ./tcrenc/models/autoencoder_onehot/weights/epitope_model_final_restructed.pth

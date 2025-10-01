@@ -1,4 +1,3 @@
----
 USE_GPU: true
 LATENT_DIMS: 64
 MIN_CDR3_LEN: 11
