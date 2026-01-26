@@ -23,12 +23,28 @@ KIDERA_DICT = constants.AA_LIST_KIDERA_FACTORS_scaled
 
 
 class Decoder_kidera(Decoder):
+    """
+    Decoder for latent space representations of protein sequences using Kidera factors.
+
+    Reconstructs amino acid sequences from latent space representations using
+    Kidera factors (10-dimensional amino acid features) and transposed convolutional neural networks.
+    Includes UMAP dimensionality reduction and Random Forest classification for sequence reconstruction.
+    """
     def __init__(self,
                  config: dict,
                  seq_type: str,
                  device: torch.device):
         """
-        TODO description
+        Initializes the Kidera decoder.
+
+        Args:
+            config: Configuration dictionary containing model parameters
+            seq_type: Type of sequence ('cdr3' or 'antigen_epitope')
+            device: Torch device for computation (CPU/GPU)
+
+        Raises:
+            ValueError: If unknown sequence type is provided
+            ConfigKeyError: If weight path is not found in config
         """
         super(Decoder_kidera, self).__init__()
 
@@ -81,10 +97,25 @@ class Decoder_kidera(Decoder):
         self.to(device)
 
     def forward(self, encoded: torch.Tensor) -> torch.Tensor:
+        """
+        Forward pass through the decoder.
+
+        Args:
+            encoded: Input tensor of shape
+
+        Returns:
+            Reconstructed tensor of shape (batch_size, 1, 10, linear_part)
+        """
         return self.decoder(self.linear_decode(encoded))
 
     def weight_load(self) -> None:
         """
+        Loads pretrained weights and associated models.
+
+        Loads:
+        - Decoder weights
+        - UMAP dimensionality reduction model
+        - Random Forest classifier
         """
         self.load_state_dict(torch.load(self.weight_path,
                                         map_location=self.device,
@@ -105,7 +136,18 @@ class Decoder_kidera(Decoder):
             self.rfc = pickle.load(f)
 
     def input_data_process(self, input_data: pd.DataFrame) -> DataLoader:
+        """
+        Prepares model input.
 
+        Args:
+            input_data: DataFrame containing latent embeddings
+
+        Returns:
+            DataLoader with processed embeddings
+
+        Raises:
+            ValueError: If embeddings have incorrect shape
+        """
         embeddings = input_data.copy().to_numpy(dtype=np.float32)
         self._embds_shape_check(embeddings)
 
@@ -117,6 +159,15 @@ class Decoder_kidera(Decoder):
         return dataloader
 
     def make_seq_from_embeddings(self, input_embds: pd.DataFrame) -> pd.DataFrame:
+        """
+        Reconstructs sequences from latent embeddings.
+
+        Args:
+            input_embds: DataFrame containing latent embeddings
+
+        Returns:
+            DataFrame with reconstructed sequences
+        """
 
         input_dataloader = self.input_data_process(input_data=input_embds)
 
@@ -130,6 +181,19 @@ class Decoder_kidera(Decoder):
 
     def reconstructed_data_process(self, reconstructed_data: torch.Tensor) -> pd.DataFrame:
         """
+        Post-processes decoder output into final sequences.
+
+        Args:
+            reconstructed_data: Tensor output from decoder
+
+        Returns:
+            DataFrame containing reconstructed sequences
+
+        Process:
+        1. Reshapes decoder output
+        2. Applies UMAP transformation
+        3. Predicts amino acids using Random Forest
+        4. Removes gaps from sequences
         """
         def_dict = {i: x for i, x in enumerate(KIDERA_DICT.keys())}
 
@@ -162,6 +226,22 @@ class Decoder_kidera(Decoder):
                     train_data: pd.DataFrame,
                     criterion,
                     test_data=None) -> None:
+        """
+        Trains the decoder model and auxiliary models.
+
+        Training process includes:
+        1. Decoder training
+        2. UMAP dimensionality reduction training
+        3. Random Forest classifier training
+
+        Args:
+            train_data: DataFrame containing training sequences and embeddings
+            criterion: Loss function for training
+            test_data: Optional DataFrame for validation data
+
+        Raises:
+            ValueError: If input data has incorrect shape
+        """
 
         self._embds_shape_check(train_data.drop(columns=self.seq_type))
 
@@ -240,6 +320,14 @@ class Decoder_kidera(Decoder):
 
     def validation_on_seqs(self, input_data: pd.DataFrame, loss_function):
         """
+        Validates model performance on input sequences.
+
+        Args:
+            input_data: DataFrame containing input sequences
+            loss_function: Function to compute validation loss
+
+        Returns:
+            tuple: (input_seqs, output_seqs, loss_value)
         """
 
         input_seqs = input_data[self.seq_type].to_frame()
@@ -260,6 +348,15 @@ class Decoder_kidera(Decoder):
 
     def save_model(self, output_dir: Path) -> None:
         """
+        Saves all model components to specified directory.
+
+        Saves:
+        - Decoder weights
+        - UMAP model
+        - Random Forest classifier
+
+        Args:
+            output_dir: Directory to save all model components
         """
         saving_weights(self, output_dir, self.embd_type, self.seq_type)
 
@@ -274,7 +371,15 @@ class Decoder_kidera(Decoder):
             pickle.dump(self.rfc, f)
 
     def _gap_removal(self, seq_output_list: list) -> list:
+        """
+        Removes gaps from reconstructed sequences.
 
+        Args:
+            seq_output_list: List of sequences containing gaps
+
+        Returns:
+            List of sequences with gaps removed
+        """
         seq_output_list_no_gap = []
         for seq in seq_output_list:
             seq_output_list_no_gap.append(seq.replace('-', ''))
@@ -282,11 +387,31 @@ class Decoder_kidera(Decoder):
         return seq_output_list_no_gap
 
     def _embds_shape_check(self, data: pd.DataFrame) -> None:
+        """
+        Validates input embeddings shape.
+
+        Args:
+            data: Input embeddings DataFrame
+
+        Raises:
+            ValueError: If embeddings have incorrect shape (should match latent_dims)
+        """
         if (data.shape[1]) != self.latent_dims:
             raise ValueError('Wrong embeddings shape')
 
     def _make_seq_dataloder(self, inp_seq: pd.Series) -> DataLoader:
+        """
+        Creates DataLoader from input sequences.
 
+        Args:
+            inp_seq: Pandas Series containing protein sequences
+
+        Returns:
+            DataLoader with sequences converted to Kidera factor representation
+        Process:
+        1. Makes sequences with the same length
+        2. Convert sequences to Kidera factors
+        """
         data = inp_seq.copy()
 
         data = data.apply(self._gap_insertion)
@@ -308,13 +433,20 @@ class Decoder_kidera(Decoder):
         return seq_dataloader
 
     def _gap_insertion(self, inp_seq: str) -> str:
-
         """
-        Insert gaps (-) to make all sequences with max length
+        Inserts gaps to standardize sequence lengths.
+
         Args:
-            inp_seq: Amino acid sequence
-        """
+            inp_seq: Amino acid sequence string
 
+        Returns:
+            Sequence with inserted gaps to match max length
+
+        Note:
+            Different gap insertion strategies are used for:
+            - Epitopes: Center-padded with gaps
+            - CDR3 sequences: Specific gap patterns based on length
+        """
         if self.seq_type == 'antigen_epitope':
             start_end = (self._max_len - len(inp_seq)) // 2
             if len(inp_seq) % 2 == 0:
@@ -347,6 +479,14 @@ class Decoder_kidera(Decoder):
             )
 
     def _sequence_to_factor(self, sequence: str) -> np.ndarray:
-        """Convert amino acid sequence to Kidera factors."""
+        """
+        Converts amino acid sequence to Kidera factors.
+
+        Args:
+            sequence: Amino acid sequence string
+
+        Returns:
+            2D numpy array of shape (10, sequence_length) containing Kidera factors
+        """
         return np.array([KIDERA_DICT[aa] for aa in sequence],
                         dtype=np.float32).T

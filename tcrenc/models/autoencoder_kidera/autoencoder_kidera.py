@@ -58,10 +58,16 @@ class Autoencoder_kidera(Autoencoder):
                  seq_type: str,
                  device: torch.device):
         """
-        Initializes the convolutional autoencoder.
+        Initializes the Kidera autoencoder.
 
         Args:
-            ... TODO
+            config: Configuration dictionary containing model parameters
+            seq_type: Type of sequence ('cdr3' or 'antigen_epitope')
+            device: Torch device for computation (CPU/GPU)
+
+        Raises:
+            ValueError: If unknown sequence type is provided
+            ConfigKeyError: If weight path is not found in config
         """
         super(Autoencoder_kidera, self).__init__()
 
@@ -110,12 +116,10 @@ class Autoencoder_kidera(Autoencoder):
         Forward pass through the autoencoder.
 
         Args:
-            inp_seq (torch.torch.Tensor): Input tensor of shape (batch_size, 1, 10, linear),
-                              where 10 is the number of features per amino acid,
-                              and linear is the number of amino acids.
+            x: Input tensor of shape (batch_size, 1, 10, linear_part)
 
         Returns:
-            torch.torch.Tensor: Reconstructed input tensor of the same shape.
+            Reconstructed tensor of same shape as input
         """
         encoded = self.encoder(x)
         decoded = self.decoder(encoded)
@@ -123,6 +127,12 @@ class Autoencoder_kidera(Autoencoder):
 
     def weight_load(self) -> None:
         """
+        Loads pretrained weights and associated models.
+
+        Loads:
+        - Autoencoder weights
+        - UMAP dimensionality reduction model
+        - Random Forest classifier
         """
         self.load_state_dict(torch.load(self.weight_path,
                                         map_location=self.device,
@@ -144,28 +154,73 @@ class Autoencoder_kidera(Autoencoder):
 
     def input_data_process(self, inp_seqs: pd.Series) -> DataLoader:
         """
-        Main function to prepare torch DataLoader for input pandas Series, consist of 'cdr3' or 'antigen_epitope' sequences.
-        It add gaps and ... TODO description
+        Prepares input sequences for model processing.
+
+        Args:
+            inp_seqs: Pandas Series containing protein sequences ('cdr3' or 'antigen_epitope')
+
+        Returns:
+            DataLoader with processed sequences in Kidera factor representation
         """
         inp_dataloader = self.encoder.input_data_process(inp_data=inp_seqs)
         return inp_dataloader
 
     def make_embeddings_from_seq(self, input_data: pd.DataFrame) -> pd.DataFrame:
+        """
+        Generates embeddings from input sequences.
+
+        Args:
+            input_data: DataFrame containing sequences in seq_type column
+
+        Returns:
+            DataFrame containing latent embeddings concatenated with input sequences
+        """
         embeddings = self.encoder.make_embeddings_from_seq(input_data=input_data)
         return embeddings
 
     def make_seq_from_embeddings(self, input_embds: pd.DataFrame) -> pd.DataFrame:
+        """
+        Reconstructs sequences from embeddings.
+
+        Args:
+            input_embds: DataFrame containing embeddings
+
+        Returns:
+            DataFrame with reconstructed sequences
+        """
         decoded_seqs = self.decoder.make_seq_from_embeddings(input_embds=input_embds)
         return decoded_seqs
 
     def reconstructed_data_process(self, input_tensor: torch.Tensor) -> pd.DataFrame:
+        """
+        Post-processes decoder output into final sequences.
+
+        Args:
+            input_tensor: Tensor output from decoder
+
+        Returns:
+            DataFrame containing reconstructed sequences
+        """
         reconstructed_data = self.decoder.reconstructed_data_process(reconstructed_data=input_tensor)
         return reconstructed_data
 
     def model_train(self,
-                    train_data: DataLoader,
+                    train_data: pd.DataFrame,
                     criterion,
                     test_data=None) -> None:
+        """
+        Trains the autoencoder and auxiliary models.
+
+        Training process includes:
+        1. Autoencoder training
+        2. UMAP dimensionality reduction training
+        3. Random Forest classifier training
+
+        Args:
+            train_data: pd.DataFrame containing training sequences
+            criterion: Loss function for autoencoder training
+            test_data: Optional DataLoader for validation data
+        """
 
         input_dataloader = self.input_data_process(inp_seqs=train_data[self.seq_type])
 
@@ -234,6 +289,15 @@ class Autoencoder_kidera(Autoencoder):
 
     def save_model(self, output_dir: Path) -> None:
         """
+        Saves all model components to specified directory.
+
+        Saves:
+        - Autoencoder weights
+        - UMAP model
+        - Random Forest classifier
+
+        Args:
+            output_dir: Directory to save all model components
         """
         saving_weights(self, output_dir, self.embd_type, self.seq_type)
 
@@ -249,6 +313,14 @@ class Autoencoder_kidera(Autoencoder):
 
     def validation_on_seqs(self, input_data: pd.DataFrame, loss_function):
         """
+        Validates model performance on input sequences.
+
+        Args:
+            input_data: DataFrame containing input sequences
+            loss_function: Function to compute validation loss
+
+        Returns:
+            tuple: (input_seqs, output_seqs, loss_value)
         """
         input_dataloader = self.input_data_process(inp_seqs=input_data[self.seq_type])
 
