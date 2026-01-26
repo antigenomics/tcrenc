@@ -133,7 +133,6 @@ class Encoder_kidera(Encoder):
     def model_train(self,
                     train_data: pd.DataFrame,
                     criterion,
-                    input_train_seqs: pd.Series,
                     test_data=None):
 
         self._embds_shape_check(train_data.drop(columns=self.seq_type))

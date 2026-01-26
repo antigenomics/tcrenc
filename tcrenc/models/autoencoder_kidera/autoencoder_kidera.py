@@ -165,7 +165,6 @@ class Autoencoder_kidera(Autoencoder):
     def model_train(self,
                     train_data: DataLoader,
                     criterion,
-                    input_train_seqs: pd.Series,
                     test_data=None) -> None:
 
         input_dataloader = self.input_data_process(inp_seqs=train_data[self.seq_type])
@@ -191,7 +190,7 @@ class Autoencoder_kidera(Autoencoder):
 
         labels = {x: i for i, x in enumerate(KIDERA_DICT.keys())}
 
-        input_train_seqs = input_train_seqs.apply(self.encoder._gap_insertion)
+        input_train_seqs = train_data[self.seq_type].apply(self.encoder._gap_insertion)
         inp_seqs = input_train_seqs.str.cat(sep='')
 
         model_out_reshaped_labeled = []

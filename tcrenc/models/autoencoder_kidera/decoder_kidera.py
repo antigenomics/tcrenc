@@ -161,7 +161,6 @@ class Decoder_kidera(Decoder):
     def model_train(self,
                     train_data: pd.DataFrame,
                     criterion,
-                    input_train_seqs: pd.Series,
                     test_data=None) -> None:
 
         self._embds_shape_check(train_data.drop(columns=self.seq_type))
@@ -203,7 +202,7 @@ class Decoder_kidera(Decoder):
 
         labels = {x: i for i, x in enumerate(KIDERA_DICT.keys())}
 
-        input_train_seqs = input_train_seqs.apply(self._gap_insertion)
+        input_train_seqs = train_data[self.seq_type].apply(self._gap_insertion)
         inp_seqs = input_train_seqs.str.cat(sep='')
 
         model_out_reshaped_labeled = []
