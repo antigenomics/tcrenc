@@ -17,12 +17,26 @@ LEN_AA_LIST = len(constants.AA_LIST)
 
 
 class Encoder_onehot(Encoder):
+    """One-hot encoder for protein sequences.
+
+    Inherits from base Encoder class and implements functionality for encoding
+    amino acid sequences into latent space representations using one-hot encoding.
+    """
     def __init__(self,
                  config: dict,
                  seq_type: str,
                  device: torch.device):
         """
-        TODO description
+        Initializes the one-hot encoder.
+
+        Args:
+            config: Configuration dictionary containing model parameters
+            seq_type: Type of sequence ('cdr3' or 'antigen_epitope')
+            device: Torch device for computation (CPU/GPU)
+
+        Raises:
+            ValueError: If unknown sequence type is provided
+            ConfigKeyError: If weight path is not found in config
         """
         super(Encoder_onehot, self).__init__()
 
@@ -61,10 +75,20 @@ class Encoder_onehot(Encoder):
         self.to(device)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Forward pass through the encoder network.
+
+        Args:
+            x: Input tensor of shape (batch_size, LEN_AA_LIST, seq_length)
+
+        Returns:
+            Encoded tensor of shape (batch_size, latent_dims)
+        """
         return self.encoder(x)
 
     def weight_load(self) -> None:
         """
+        Loads pretrained weights for the model.
         """
         self.load_state_dict(torch.load(self.weight_path,
                                         map_location=self.device,
@@ -72,6 +96,14 @@ class Encoder_onehot(Encoder):
 
     def make_embeddings_from_seq(self, input_data: pd.DataFrame) -> pd.DataFrame:
         """
+        Create embeddings from input biological sequences.
+
+        Args:
+            input_data (pd.DataFrame): A DataFrame containing a single column
+                with one type of sequences.
+
+        Returns:
+            DataFrame containing embeddings concatenated with input sequences
         """
         input_dataloader = self.input_data_process(inp_seqs=input_data[self.seq_type])
 
@@ -85,8 +117,18 @@ class Encoder_onehot(Encoder):
 
     def input_data_process(self, inp_seqs: pd.Series) -> DataLoader:
         """
-        Main function to prepare torch DataLoader for input pandas Series, consist of 'cdr3' or 'antigen_epitope' sequences.
-        It add gaps and ... TODO description
+        Prepares input sequences for model.
+
+        Processes sequences by:
+        1. Inserting gaps at specific positions (+3, +4, -3, -4) (each sequence - four variants)
+        2. Converting to one-hot encoding
+        3. Creating DataLoader for batch processing
+
+        Args:
+            inp_seqs: Pandas Series containing input sequences
+
+        Returns:
+            DataLoader with one-hot encoded sequences
         """
         inp_list = inp_seqs.to_list()
 
@@ -113,6 +155,14 @@ class Encoder_onehot(Encoder):
                                 encoder_output: torch.Tensor,
                                 input_seqs: pd.Series) -> pd.DataFrame:
         """
+        Post-processes encoder output into final embeddings.
+
+        Args:
+            encoder_output: Tensor of shape (n_samples*4, latent_dims)
+            input_seqs: Original input sequences
+
+        Returns:
+            DataFrame with embeddings concatenated with original sequences (n_samples, latent_dims*4 + 1)
         """
         embeddings = encoder_output.reshape(input_seqs.shape[0], 4*self.config['LATENT_DIMS'])
 
@@ -124,9 +174,17 @@ class Encoder_onehot(Encoder):
     def model_train(self,
                     train_data: pd.DataFrame,
                     criterion,
-                    input_train_seqs,
                     test_data=None) -> None:
         """
+        Trains the encoder model.
+
+        Args:
+            train_data: DataFrame containing training sequences and embeddings
+            criterion: Loss function for training
+            test_data: Optional DataFrame for validation data
+
+        Raises:
+            ValueError: If input data has incorrect shape
         """
         self._embds_shape_check(train_data.drop(columns=self.seq_type))
 
@@ -161,12 +219,22 @@ class Encoder_onehot(Encoder):
 
     def save_model(self, output_path: Path) -> None:
         """
+        Saves model weights to specified path.
+
+        Args:
+            output_path: Path to save model weights
         """
         saving_weights(self, output_path, self.embd_type, self.seq_type)
 
     def _gap_insertion(self, inp_list: list) -> list:
         """
-        Function to insert gaps to sequences of cdr3 and epitope to positions +3, +4, -3, -4
+        Inserts gaps into sequences of cdr3 and epitope to positions +3, +4, -3, -4.
+
+        Args:
+            inp_list: List of input sequences
+
+        Returns:
+            List of sequences with inserted gaps
         """
         ext_list = []
 
@@ -182,7 +250,13 @@ class Encoder_onehot(Encoder):
 
     def _one_hot_code(self, peptide: str) -> np.ndarray:
         """
-        Return 2d np.ndarray(np.float32): peptide in one-hot representation.
+        Encodes peptide sequence into one-hot matrix.
+
+        Args:
+            peptide: Amino acid sequence string
+
+        Returns:
+            2D numpy array of shape (LEN_AA_LIST, seq_length)
         """
         pep_oh_encoded = np.zeros((LEN_AA_LIST, len(peptide)),
                                   dtype=np.float32)
@@ -195,12 +269,26 @@ class Encoder_onehot(Encoder):
 
     def _embds_shape_check(self, embds_inp_data: pd.DataFrame) -> None:
         """
+        Validates input embeddings shape.
+
+        Args:
+            embds_inp_data: Input embeddings DataFrame
+
+        Raises:
+            ValueError: If embeddings have incorrect shape (should be 4*latent_dims)
         """
         if (embds_inp_data.shape[1]) != 4 * self.latent_dims:
             raise ValueError('Wrong embeddings shape')
 
     def _make_embds_dataloader(self, input_embeddings: pd.DataFrame) -> DataLoader:
         """
+        Creates DataLoader from input embeddings.
+
+        Args:
+            input_embeddings: DataFrame containing embeddings
+
+        Returns:
+            DataLoader with reshaped embeddings
         """
         embds_np = input_embeddings.to_numpy(dtype=np.float32)
         embds_np_rs = embds_np.reshape((embds_np.shape[0]*4, int(embds_np.shape[1]/4)))

@@ -18,12 +18,29 @@ LEN_AA_LIST = len(constants.AA_LIST)
 
 
 class Decoder_onehot(Decoder):
+    """
+    One-hot Decoder model.
+
+    This model construct protein sequences('cdr3' or 'antigene_epitope') from latent space representations
+    using one-hot encoding.
+
+    See `Decoder` for the base methods description.
+    """
     def __init__(self,
                  config: dict,
                  seq_type: str,
                  device: torch.device):
         """
-        TODO description
+        Initializes the one-hot decoder.
+
+        Args:
+            config: Configuration dictionary containing model parameters
+            seq_type: Type of sequence ('cdr3' or 'antigen_epitope')
+            device: Torch device for computation (CPU/GPU)
+
+        Raises:
+            ValueError: If unknown sequence type is provided
+            ConfigKeyError: If weight path is not found in config
         """
         super(Decoder_onehot, self).__init__()
 
@@ -62,10 +79,20 @@ class Decoder_onehot(Decoder):
         self.to(device)
 
     def forward(self, encoded: torch.Tensor) -> torch.Tensor:
+        """
+        Forward pass through the decoder network.
+
+        Args:
+            encoded: Input tensor of shape (batch_size, latent_dims)
+
+        Returns:
+            Decoded tensor of shape (batch_size, LEN_AA_LIST, seq_length)
+        """
         return self.decoder(encoded)
 
     def weight_load(self) -> None:
         """
+        Loads pretrained weights for the model.
         """
         self.load_state_dict(torch.load(self.weight_path,
                                         map_location=self.device,
@@ -73,6 +100,16 @@ class Decoder_onehot(Decoder):
 
     def input_data_process(self, input_embds: pd.DataFrame) -> DataLoader:
         """
+        Prepare a DataLoader from a Pandas DataFrame of embeddings.
+
+        Args:
+            input_embds: DataFrame containing embeddings of shape (n_samples, 4*latent_dims)
+
+        Returns:
+            DataLoader with processed embeddings
+
+        Raises:
+            ValueError: If input embeddings have incorrect shape
         """
         embeddings = input_embds.copy().to_numpy(dtype=np.float32)
         self._embds_shape_check(embeddings)
@@ -87,6 +124,13 @@ class Decoder_onehot(Decoder):
 
     def make_seq_from_embeddings(self, input_embds: pd.DataFrame) -> pd.DataFrame:
         """
+        Reconstruct sequences from input embeddings.
+
+        Args:
+            input_embds: DataFrame containing embeddings to decode
+
+        Returns:
+            DataFrame with decoded sequences
         """
         input_dataloader = self.input_data_process(input_embds=input_embds)
 
@@ -100,6 +144,13 @@ class Decoder_onehot(Decoder):
 
     def reconstructed_data_process(self, model_output: torch.Tensor) -> pd.DataFrame:
         """
+        Post-processes model output into final sequences.
+
+        Args:
+            model_output: Tensor of shape (batch_size, LEN_AA_LIST, seq_length)
+
+        Returns:
+            DataFrame containing decoded sequences
         """
         seq_output_list = []
 
@@ -114,9 +165,17 @@ class Decoder_onehot(Decoder):
     def model_train(self,
                     train_data: pd.DataFrame,
                     criterion,
-                    input_train_seqs,
                     test_data=None) -> None:
         """
+        Trains the decoder model.
+
+        Args:
+            train_data: DataFrame containing training sequences and embeddings
+            criterion: Loss function for training
+            test_data: Optional DataFrame for validation data
+
+        Raises:
+            ValueError: If input data has incorrect shape
         """
         self._embds_shape_check(train_data.drop(columns=self.seq_type))
 
@@ -151,6 +210,17 @@ class Decoder_onehot(Decoder):
 
     def validation_on_seqs(self, input_data: pd.DataFrame, loss_function):
         """
+        Validates model performance on input sequences.
+
+        Args:
+            input_data: DataFrame containing input sequences and embeddings
+            loss_function: Function to compute validation loss
+
+        Returns:
+            tuple: (input_seqs, output_seqs, loss_value)
+            input seqs (pd.DataFrame): DataFrame containing input sequences used for validation.
+            output seqs (pd.DataFrame): DataFrame containing model ouput reconstructed sequences.
+            loss_value (float): Computed loss for the validation set based on the provided loss function.
         """
 
         input_seqs = input_data[self.seq_type].to_frame()
@@ -171,17 +241,22 @@ class Decoder_onehot(Decoder):
 
     def save_model(self, output_path: Path) -> None:
         """
+        Saves model weights to specified path.
+
+        Args:
+            output_path: Path to save model weights
         """
         saving_weights(self, output_path, self.embd_type, self.seq_type)
 
     def _one_hot_decode(self, one_hot_matr_input: np.ndarray) -> str:
         """
-        Return peptide sequence from one-hot representation.
-        Input matrix should be np array with shape (number of aminoacids, length of sequence).
+        Decodes one-hot matrix into amino acid sequence.
 
-        There are 1 modes to decode matrix to sequence:
-        1) 'argmax'(default) - chose maximum value in the column (position in peptide) and assign it to the aminoacid.
-        There is no 'X'(missing) aminoacid in output.
+        Args:
+            one_hot_matr_input: 2D numpy array of shape (LEN_AA_LIST, seq_length)
+
+        Returns:
+            Decoded amino acid sequence string
         """
         ans = ""
         one_hot_matr = one_hot_matr_input.copy()
@@ -194,6 +269,16 @@ class Decoder_onehot(Decoder):
 
     def _gap_removal(self, seq_output_list: list) -> list:
         """
+        Removes gaps from sequences made by this model and selects most common variant.
+
+        Args:
+            seq_output_list: List of sequences with gaps
+
+        Returns:
+            List of sequences without gaps
+
+        Note:
+            This function works with 4 sequences made from one representation in latent space.
         """
         seq_output_list_no_gap = []
         for i in range(0, len(seq_output_list), 4):
@@ -211,7 +296,13 @@ class Decoder_onehot(Decoder):
 
     def _gap_insertion(self, inp_list: list) -> list:
         """
-        Function to insert gaps to sequences of cdr3 and epitope to positions +3, +4, -3, -4
+        Inserts gaps into sequences of cdr3 and epitope to positions +3, +4, -3, -4.
+
+        Args:
+            inp_list: List of input sequences
+
+        Returns:
+            List of sequences with inserted gaps
         """
         ext_list = []
 
@@ -227,7 +318,13 @@ class Decoder_onehot(Decoder):
 
     def _one_hot_code(self, peptide: str) -> np.ndarray:
         """
-        Return 2d np.array(np.float32): peptide in one-hot representation.
+        Encodes peptide sequence into one-hot matrix.
+
+        Args:
+            peptide: Amino acid sequence string
+
+        Returns:
+            2D numpy array of shape (LEN_AA_LIST, seq_length)
         """
         pep_oh_encoded = np.zeros((LEN_AA_LIST, len(peptide)),
                                   dtype=np.float32)
@@ -240,12 +337,26 @@ class Decoder_onehot(Decoder):
 
     def _embds_shape_check(self, embds_inp_data: pd.DataFrame) -> None:
         """
+        Validates input embeddings shape.
+
+        Args:
+            embds_inp_data: Input embeddings DataFrame
+
+        Raises:
+            ValueError: If embeddings have incorrect shape
         """
         if (embds_inp_data.shape[1]) != 4 * self.latent_dims:
             raise ValueError('Wrong embeddings shape')
 
     def _make_seq_dataloder(self, inp_seq: pd.Series) -> DataLoader:
         """
+        Creates DataLoader from input sequences.
+
+        Args:
+            inp_seq: Pandas Series containing sequences
+
+        Returns:
+            DataLoader with one-hot encoded sequences
         """
         inp_list = inp_seq.to_list()
 
