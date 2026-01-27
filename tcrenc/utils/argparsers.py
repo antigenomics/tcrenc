@@ -13,8 +13,7 @@ def run_argparser():
         "--embed_type",
         type=str,
         required=True,
-        choices=["onehot", "kidera"],
-        help="Type of sequence representation: onehot or kidera factors",
+        help="Type of sequence representation. Available options listed in README file",
     )
     parser.add_argument(
         "--decoder",
@@ -47,8 +46,7 @@ def train_argparser():
         "--embed_type",
         type=str,
         required=True,
-        choices=["onehot", "kidera", "atchley"],
-        help="Type of sequence representation: onehot or kidera factors or atchley factors",
+        help="Type of sequence representation. Available options listed in README file",
     )
     parser.add_argument(
         "--weights_save",
@@ -97,8 +95,7 @@ def validate_argrapser():
         "--embed_type",
         type=str,
         required=True,
-        choices=["onehot", "kidera"],
-        help="Type of sequence representation: onehot or kidera factors",
+        help="Type of sequence representation. Available options listed in README file",
     )
     parser.add_argument(
         "--decoder",
