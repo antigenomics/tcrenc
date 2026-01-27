@@ -10,8 +10,24 @@ def model_train(model,
                 config: dict,
                 test_dataloader: DataLoader = None):
     """
-    """
+    Trains an NN model using the provided data.
 
+    Args:
+        model: The NN PyTorch model to train
+        input_dataloader: DataLoader with training data
+        device: Computation PyTorch device to use
+        criterion: Loss function for training
+        config: Configuration dictionary.
+        test_dataloader: Optional DataLoader for validation data
+
+    Returns:
+        None
+
+    Note:
+        - Prints training progress every 20 epochs
+        - Calculates and prints test loss if test_dataloader is provided
+        - Uses optimizer specified in config
+    """
     optimizer = torchtune_config.instantiate(config['OPTIMIZER'], model.parameters())
 
     if test_dataloader is not None:
@@ -82,8 +98,27 @@ def part_model_train(model,
                      seq_test_dataloader: DataLoader = None,
                      embds_test_dataloader: DataLoader = None):
     """
-    """
+    Trains encoder or decoder part of a model.
 
+    Args:
+        model: The NN PyTorch model to train (encoder or decoder)
+        model_type: Type of model ('encoder' or 'decoder')
+        seq_train_dataloader: DataLoader for training sequences
+        embds_train_dataloader: DataLoader for training embeddings
+        device: Computation PyTorch device to use
+        criterion: Loss function for training
+        config: Configuration dictionary
+        seq_test_dataloader: Optional DataLoader for validation sequences
+        embds_test_dataloader: Optional DataLoader for validation embeddings
+
+    Returns:
+        None
+
+    Note:
+        - Prints training progress every 20 epochs and at final epoch
+        - Calculates and prints test loss if test_dataloader is provided
+        - Uses optimizer specified in config
+    """
     optimizer = torchtune_config.instantiate(config['OPTIMIZER'], model.parameters())
 
     if seq_test_dataloader is not None:
@@ -157,7 +192,21 @@ def part_model_train(model,
 
 
 def saving_weights(model, output_dir, embed_type: str, seqs_type: str) -> None:
+    """
+    Saves model weights to a file with standardized naming convention.
 
+    Args:
+        model: The NN PyTorch model whose weights to save
+        output_dir: Directory to save the weights file
+        embed_type: Type of embedding used
+        seqs_type: Type of sequences processed ('cdr3' or 'antigen_epitope')
+
+    Returns:
+        None
+
+    Note:
+        File naming convention: weights_[embed_type]_[seqs_type].pth
+    """
     output_path_suffix = f'weights_{embed_type}_{seqs_type}.pth'
     output_path = output_dir.joinpath(output_path_suffix)
     torch.save(model.state_dict(), output_path)

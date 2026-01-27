@@ -15,8 +15,23 @@ default_color = "#6193d8"
 
 def model_validate(model, input_dataloader: DataLoader, device,  criterion):
     """
-    Function to create embeddings by using make_embeddings_from_seq function of model.
-    It also prints reconstruction error based on criterion specified in model config file.
+    Validates model performance by computing reconstruction error.
+
+    Args:
+        model: The NN PyTorch model to validate
+        input_dataloader: DataLoader containing input
+        device: Computation PyTorch device to use
+        criterion: Loss function for validation
+
+    Returns:
+        tuple: (input_tensors, output_tensors, average_loss)
+        - input_tensors: Concatenated input PyTorch tensors
+        - output_tensors: Concatenated reconstructed PyTorch tensors
+        - average_loss: Mean reconstruction loss across all batches
+
+    Note:
+        - Processes data without gradient computation
+        - Prints average reconstruction error
     """
     model.eval()
 
@@ -47,7 +62,31 @@ def make_report(input_seqs: pd.DataFrame,
                 seq_type: str,
                 loss_value: float
                 ):
+    """
+    Generates comprehensive validation report comparing input and output sequences.
 
+    Args:
+        input_seqs: DataFrame containing original sequences
+        output_seqs: DataFrame containing reconstructed sequences
+        output_dir: Directory to save report files
+        embed_type: Type of embedding used
+        seq_type: Type of sequences ('cdr3' or 'antigen_epitope')
+        loss_value: Average reconstruction loss value
+
+    Returns:
+        None
+
+    Outputs:
+        - YAML report file with statistics
+        - CSV files with sequences that changed length or had errors
+        - PDF visualization of error patterns
+
+    Analysis includes:
+        - Length distribution before/after reconstruction
+        - Position-specific error rates
+        - Most common amino acid substitutions
+        - Correct sequence/length counts
+    """
     report_dict = {}
 
     input_len_dstrb = input_seqs[seq_type].str.len().value_counts().to_dict()

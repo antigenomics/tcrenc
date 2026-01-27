@@ -6,8 +6,21 @@ from torch.utils.data import DataLoader
 
 def model_process(model, inp_dataloader: DataLoader, device):
     """
-    Function to create embeddings by using make_embeddings_from_seq function of model.
-    It also prints reconstruction error based on criterion specified in model config file.
+    Processes input data through the model to generate embeddings or reconstructed sequences.
+
+    Args:
+        model: The NN PyTorch model to process the data
+        inp_dataloader: DataLoader containing input
+        device: Computation PyTorch device to use
+
+    Returns:
+        torch.Tensor: Concatenated output tensors from the model
+
+    Note:
+        - Sets model to evaluation mode
+        - Processes data without gradient computation
+        - Moves output to CPU memory
+        - You can use it for NN models
     """
     model.eval()
 
@@ -24,8 +37,24 @@ def model_process(model, inp_dataloader: DataLoader, device):
 
 def saving_results(df: pd.DataFrame, output_dir: str, args, seqs_type: str) -> None:
     """
-    Function to save embeddings to csv file.
-    One row consist input seq and embedding for it.
+    Saves processed results (embeddings or reconstructed sequences) to CSV file.
+
+    Args:
+        df: DataFrame containing the results to save
+        output_dir: Directory path to save the output file
+        args: Command line arguments object containing:
+        seqs_type: Type of sequences processed ('cdr3' or 'antigen_epitope')
+
+    Returns:
+        None
+
+    Output:
+        Creates a CSV file with naming convention:
+        - embeddings_[seqs_type]_[embed_type].csv when using encoder
+        - reconstructed_[seqs_type]_[embed_type].csv when using decoder
+
+    Note:
+        Prints confirmation message when file is saved
     """
     if args.decoder:
         process_result = 'reconstructed'
