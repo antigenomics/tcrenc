@@ -66,7 +66,6 @@ def full_autoencoder_train(args, inp_data, gen_config, Model, device, loss_funct
 
         model_cdr3.model_train(train_data=train_cdr3_set,
                                criterion=loss_function,
-                               input_train_seqs=train_cdr3_set['cdr3'],
                                test_data=test_cdr3_set)
 
         if args.weights_save:
@@ -91,7 +90,6 @@ def full_autoencoder_train(args, inp_data, gen_config, Model, device, loss_funct
 
         model_epitope.model_train(train_data=train_epitope_set,
                                   criterion=loss_function,
-                                  input_train_seqs=train_epitope_set['antigen_epitope'],
                                   test_data=test_epitope_set)
 
         if args.weights_save:
@@ -119,7 +117,6 @@ def part_autoencoder_train(args, inp_data, gen_config, Model, device, loss_funct
 
         model_cdr3.model_train(train_data=train_cdr3_set,
                                criterion=loss_function,
-                               input_train_seqs=train_cdr3_set['cdr3'],
                                test_data=test_cdr3_set)
 
         if args.weights_save:
@@ -142,7 +139,6 @@ def part_autoencoder_train(args, inp_data, gen_config, Model, device, loss_funct
 
         model_epitope.model_train(train_data=train_epitope_set,
                                   criterion=loss_function,
-                                  input_train_seqs=train_epitope_set['antigen_epitope'],
                                   test_data=test_epitope_set)
 
         if args.weights_save:
