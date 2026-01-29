@@ -1,17 +1,11 @@
 from abc import abstractmethod
-import pandas as pd
-from pathlib import Path
 
-import torch
 from torch.nn import Module
 
 
 class Autoencoder(Module):
     @abstractmethod
-    def __init__(self,
-                 config: dict,
-                 seq_type: str,
-                 device: torch.device):
+    def __init__(self,):
         """
         Initialize the base Autoencoder.
 
@@ -37,8 +31,7 @@ class Autoencoder(Module):
         pass
 
     @abstractmethod
-    def make_embeddings_from_seq(self,
-                                 input_data: pd.DataFrame) -> pd.DataFrame:
+    def make_embeddings_from_seq(self,):
         """
         Create embeddings from input biological sequences.
 
@@ -53,8 +46,7 @@ class Autoencoder(Module):
         pass
 
     @abstractmethod
-    def make_seq_from_embeddings(self,
-                                 input_embds: pd.DataFrame) -> pd.DataFrame:
+    def make_seq_from_embeddings(self,):
         """
         Reconstruct sequences from input embeddings.
 
@@ -68,10 +60,7 @@ class Autoencoder(Module):
         pass
 
     @abstractmethod
-    def model_train(self,
-                    train_data: pd.DataFrame,
-                    criterion,
-                    test_data: pd.DataFrame = None) -> None:
+    def model_train(self,):
         """
         Train the model using the provided training data.
 
@@ -88,8 +77,7 @@ class Autoencoder(Module):
         pass
 
     @abstractmethod
-    def save_model(self,
-                   output_path: Path):
+    def save_model(self,):
         """
         Save the current model.
 
@@ -102,9 +90,7 @@ class Autoencoder(Module):
         pass
 
     @abstractmethod
-    def validation_on_seqs(self,
-                           input_data: pd.DataFrame,
-                           loss_function):
+    def validation_on_seqs(self,):
         """
         Validate the model on a set of input sequences.
 

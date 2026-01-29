@@ -1,16 +1,11 @@
 from abc import abstractmethod
-import pandas as pd
 
-import torch
 from torch.nn import Module
 
 
 class Decoder(Module):
     @abstractmethod
-    def __init__(self,
-                 config: dict,
-                 seq_type: str,
-                 device: torch.device):
+    def __init__(self,):
         super(Decoder, self).__init__()
         """
         Initialize the base Decoder.
@@ -36,8 +31,7 @@ class Decoder(Module):
         pass
 
     @abstractmethod
-    def make_seq_from_embeddings(self,
-                                 input_embds: pd.DataFrame) -> pd.DataFrame:
+    def make_seq_from_embeddings(self,):
         """
         Reconstruct sequences from input embeddings.
 
@@ -51,10 +45,7 @@ class Decoder(Module):
         pass
 
     @abstractmethod
-    def model_train(self,
-                    train_data: pd.DataFrame,
-                    criterion,
-                    test_data: pd.DataFrame = None) -> None:
+    def model_train(self,):
         """
         Train the model using the provided training data.
 

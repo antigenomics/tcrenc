@@ -1,16 +1,11 @@
 from abc import abstractmethod
-import pandas as pd
 
-import torch
 from torch.nn import Module
 
 
 class Encoder(Module):
     @abstractmethod
-    def __init__(self,
-                 config: dict,
-                 seq_type: str,
-                 device: torch.device):
+    def __init__(self,):
         """
         Initialize the base Encoder.
 
@@ -36,8 +31,7 @@ class Encoder(Module):
         pass
 
     @abstractmethod
-    def make_embeddings_from_seq(self,
-                                 input_data: pd.DataFrame) -> pd.DataFrame:
+    def make_embeddings_from_seq(self,):
         """
         Create embeddings from input biological sequences.
 
@@ -52,10 +46,7 @@ class Encoder(Module):
         pass
 
     @abstractmethod
-    def model_train(self,
-                    train_data: pd.DataFrame,
-                    criterion,
-                    test_data: pd.DataFrame = None) -> None:
+    def model_train(self,):
         """
         Train the model using the provided training data.
 
