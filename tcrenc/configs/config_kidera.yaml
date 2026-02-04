@@ -6,7 +6,7 @@ general:
   LOSS_FUNCTION:
     _component_: torch.nn.BCEWithLogitsLoss
 train:
-  EPOCH_NUM: 2
+  EPOCH_NUM: 200
   OPTIMIZER:
     _component_: torch.optim.Adam
     lr: 1e-4
