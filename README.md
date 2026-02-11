@@ -20,7 +20,7 @@ There are three entry-point scripts:
 * `tcrenc-train` - train a model
 * `tcrenc-validate` - validate a model on a dataset
 
-All scripts support running a full autoencoder as well as using the encoder or decoder separately. The tool can be used either as a CLI or as an importable Python library. Model hyperparameters, data filtering parameters, and other options are defined in the [configuration files](). New models can be added by following the instructions [here]().
+All scripts support running a full autoencoder as well as using the encoder or decoder separately. The tool can be used either as a CLI or as an importable Python library. Model hyperparameters, data filtering parameters, and other options are defined in the [configuration files](https://github.com/antigenomics/tcrenc/tree/main/tcrenc/configs). New models can be added by following the instructions [here](https://github.com/antigenomics/tcrenc/blob/main/tcrenc/models/ADDING_NEW_MODELS.md).
 
 
 ### Script Arguments Documentation
@@ -142,11 +142,11 @@ Make embeddings:
 tcrenc-run --input VDJdb --embed_type onehot --output ./testing
 ```
 
-**Other Usage examples could be found [here]().**
+**Other Usage examples could be found [here](https://github.com/antigenomics/tcrenc/tree/main/examples).**
 
 ## Results
 
-This tool was used to train autoencoder models using **one-hot** and **Kidera factors** representations of the input sequences. The model architectures are described in the [Models section](). Pretrained weights for the **one-hot** autoencoder are also provided in this repository.
+This tool was used to train autoencoder models using **one-hot** and **Kidera factors** representations of the input sequences. Results could be found [here](https://github.com/antigenomics/tcrenc/tree/main/results). The model architectures are described in the [Models section](https://github.com/antigenomics/tcrenc/tree/main/tcrenc/models). Pretrained weights for the **one-hot** autoencoder are also provided in this repository.
 
 ### One-hot model
 - CDR3 sequence reconstruction accuracy on VDJdb: **99.3%**

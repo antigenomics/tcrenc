@@ -11,7 +11,7 @@ All customizable settings (model hyperparameters, paths to weights, data filteri
 ## General considerations
 
 ### Configuration
-In **TCRenc**, model behavior is controlled via [configuration files](), which are standard **YAML** files. There are two config types:
+In **TCRenc**, model behavior is controlled via [configuration files](https://github.com/antigenomics/tcrenc/tree/main/tcrenc/configs), which are standard **YAML** files. There are two config types:
 
 - **general**: global TCRenc settings (device/GPU, sequence filtering parameters, etc.)
 - **model**: model-specific settings (training/validation/run parameters)
@@ -23,7 +23,7 @@ A model config file may include the following sections:
 - `run` (required if the model will be used to generate embeddings or decode them)
 
 ### Indexing
-To index a new model, add its name to the `AV_EMBD_TYPE` list in [this Python file](). Then update:
+To index a new model, add its name to the `AV_EMBD_TYPE` list in [this Python file](https://github.com/antigenomics/tcrenc/blob/main/tcrenc/models/models_list.py). Then update:
 - `load_model_for_train()`
 - `load_model_for_run()`
 - `load_model_for_validate()`
