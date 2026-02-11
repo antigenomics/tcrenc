@@ -1,0 +1,16 @@
+general:
+  BATCH_SIZE: 400
+  LOSS_FUNCTION:
+    _component_: torch.nn.CrossEntropyLoss
+train:
+  EPOCH_NUM: 200
+  OPTIMIZER:
+    _component_: torch.optim.Adam
+    lr: 0.0001
+    weight_decay: 0
+validate:
+  WEIGHTS_CDR3: tcrenc/models/autoencoder_onehot/weights/cdr3_model_final_restructed.pth
+  WEIGHTS_EPIOPE: ./tcrenc/models/autoencoder_onehot/weights/epitope_model_final_restructed.pth
+run:
+  WEIGHTS_CDR3: ./tcrenc/models/autoencoder_onehot/weights/cdr3_model_final_restructed.pth
+  WEIGHTS_EPIOPE: ./tcrenc/models/autoencoder_onehot/weights/epitope_model_final_restructed.pth

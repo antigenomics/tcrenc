@@ -1,0 +1,25 @@
+---
+general:
+  LINEAR_PART_CDR3: 19
+  LINEAR_PART_EPITOPE: 20
+  BATCH_SIZE: 64
+  LOSS_FUNCTION:
+    _component_: torch.nn.BCEWithLogitsLoss
+train:
+  EPOCH_NUM: 200
+  OPTIMIZER:
+    _component_: torch.optim.Adam
+    lr: 1e-4
+    weight_decay: 0
+validate:
+  WEIGHTS_CDR3: ''
+  # Better to store weights here './tcrenc/models/autoencoder_kidera/weights/...' 
+  # For Kidera factors weights folder should contain
+  # 1.'weights.pth' - weights for NN part
+  # 2.'rfc_weights.pkl' - model for RFC classifier
+  # 3.'umap_weights.pkl'- model for UMAP transformation
+  WEIGHTS_EPIOPE: ''
+  
+run:
+  WEIGHTS_CDR3: ''
+  WEIGHTS_EPIOPE: ''

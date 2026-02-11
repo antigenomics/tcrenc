@@ -1,89 +1,163 @@
-# TCR and epitopes autoencoders
-This tool containes pretrained autoencoders for complementary determining region 3 (CDR3) domain of the beta chain of human T-cell receptor (TCR) and for epitopes. Sequnce could be representated by one-hot encoding or by Kidera factors.
+# Autoencoders for TCR CDR3 and epitope sequences
+
+**TCRenc** - tool for training and using autoencoder models to obtain embeddings of amino-acid sequences of complementarity-determining region 3 **(CDR3)** domain of the beta chain of human T-cell receptor **(TCR)** and antigen **epitopes**. This tool supports training, validation, and inference, and also allows using the encoder and decoder separately. Implemented sequence representations include **one-hot encoding** and **Kidera factors**; the resulting embeddings can be used for downstream analyses (clustering, nearest neighbors, classification, etc.).
 
 ## Installation
-Install this project via cloning this repository:
+
+Install by cloning the repository:
 ```{bash}
-git clone git@github.com:antigenomics/tcrenc.git
+git clone https://github.com/antigenomics/tcrenc.git
+cd ./tcrenc
+conda create -n tcrenc python=3.11.14 
+conda activate tcrenc
+pip install .     
 ```
+
 ## Usage
 
-The use of this project is to interact with it through the run.py file. This file must be run via the command line. In total, this file takes 3 mandatory and 1 optional argument:
-- `input` - requires string with absolute path to the input `.csv` file.
-- `output` - requires path to output directory
-- `embed_type` - requires one of two options (`onehot` or `kidera`). Sequence representation type
-- `residual_block` - requires `true` or `false` (basically `false`). Using residual block layer in convolutional autoencoder (only makes sense if you use kidera factors).
+There are three entry-point scripts:
+* `tcrenc-run` - generate embeddings or reconstruct sequences from embeddings
+* `tcrenc-train` - train a model
+* `tcrenc-validate` - validate a model on a dataset
 
-Examples:
+All scripts support running a full autoencoder as well as using the encoder or decoder separately. The tool can be used either as a CLI or as an importable Python library. Model hyperparameters, data filtering parameters, and other options are defined in the [configuration files](). New models can be added by following the instructions [here]().
+
+
+### Script Arguments Documentation
+
+#### `tcrenc-run` - Making embeddings from TCR or epitope sequences or reconstructing sequences from embeddings
+
+| Argument | Type | Required | Description |
+|----------|------|----------|-------------|
+| `--input` | str | Yes | "VDJdb" option* or path to input CSV file(sequence type should be specified in column name) |
+| `--output` | str | Yes | Path to output directory |
+| `--embed_type` | str | Yes | Type of sequence representation (see available options below) |
+| `--decoder` | flag | No | Use decoder part only (default: false) |
+| `--cdr` | flag | No | Specify decoder sequence type as CDR3 (default: false) (Required if you use `--decoder` option) |
+| `--epitope` | flag | No | Specify decoder sequence type as epitope (default: false) (Required if you use `--decoder` option)|
+
+\* - "VDJdb" option fetches both CDR3 and antigen_epitope from database, filter it simultaneously and separately make two final CSV files with sequences.
+
+##### Input file format
+Input CSV file should contain "cdr3" or "antigen_epitope" columns.
+If both sequences types are present in input data they will be processed separately.
+All extra data will be ignored.
+
+If `--decoder` option is used input CSV must contain only latent embeddings:
+* One sequence = one row
+* Number of columns = latent dimensionality (i.e., the embedding size used by the model)
+* All values must be numeric (float-compatible)
+* Missing values (NA/NaN) are not allowed
+
+
+##### Output file format
+The output is a CSV file with embeddings:
+* One sequence = one row
+* Number of columns = latent dimensionality (i.e., the embedding size used by the model)
+* Last column with original sequence.
+
+If `--decoder` option is used, CSV file with sequences will be produced.
+
+
+#### `tcrenc-train` - Train models (autoencoder, decoder, encoder) for TCR or epitope sequences
+
+| Argument | Type | Required | Description |
+|----------|------|----------|-------------|
+| `--input` | str | Yes | "VDJdb" option or path to input CSV file(sequence type should be specified in column name) |
+| `--output` | str | Yes | Path to output directory for weights saving |
+| `--embed_type` | str | Yes | Type of sequence representation (see available options below) |
+| `--weights_save` | flag | No | Save weights (default: false) |
+| `--split` | float | No | Split ratio for train/test sets (default: 1 - no split) |
+| `--encoder_train` | flag | No | Train only encoder (default: false) |
+| `--decoder_train` | flag | No | Train only decoder (default: false) |
+| `--cdr` | flag | No | Specify VDJdb sequence type as CDR3 |
+| `--epitope` | flag | No | Specify VDJdb sequence type as epitope |
+
+
+##### Input file format
+
+Input CSV file should contain "cdr3" or "antigen_epitope" columns.
+If both sequences types are presented in the input data they will be processed separately.
+All extra data will be ignored.
+
+##### Output file format
+
+As output there will be files, which produced by model `save_model()` method. (Weights for PyTorch models (`.pth`) in presented models)
+
+#### `tcrenc-validate` - Validate model on input TCR or epitope sequences or on VDJdb
+
+| Argument | Type | Required | Description |
+|----------|------|----------|-------------|
+| `--input` | str | Yes | "VDJdb" option or path to input CSV file(sequence type should be specified in column name) |
+| `--output` | str | Yes | Path to output directory |
+| `--embed_type` | str | Yes | Type of sequence representation (see available options below) |
+| `--decoder` | flag | No | Use decoder only (default: false) |
+| `--cdr` | flag | No | Specify VDJdb sequence type as CDR3 |
+| `--epitope` | flag | No | Specify VDJdb sequence type as epitope |
+
+##### Input file format
+Input CSV file should contain "cdr3" or "antigen_epitope" columns.
+If both sequences types are presented in the input data they will be processed separately.
+All extra data will be ignored.
+
+##### Output file format
+As output there will be:
+* PDF report with error metrics
+* Main report in YAML format with error metrics
+* CSV files with wrong sequences (wrong sequences with right length, wrong sequences with wrong length)
+
+
+
+### Available Embedding Types (`--embed_type`)
+
+The following embedding types are available for all scripts:
+- `onehot` - One-hot encoding representation
+- `kidera` - Kidera factors representation
+
+### Sequence Type Specification
+
+Note about sequence type flags (`--cdr` and `--epitope`):
+- These are mutually exclusive flags
+- One must be specified when working with VDJdb data (in `tcrenc-train` or `tcrenc-validate`)
+- For custom CSV files, the sequence type is determined by the column headers
+
+### Examples
+Train autoencoder model using kidera factors sequence representation:
 ```{bash}
-python run.py --input ~/tcrenc/dataset/X_test.csv --output . --embed_type onehot 
+tcrenc-train --input VDJdb --output ./testing --embed_type kidera --weights_save
 ```
-After running this line you will get embeddings for cdr and epitope sequences by using model for one hot representation.
+
+Train decoder only based on data presented in CSV file `./testing/embeddings_cdr3_onehot.csv` with train/test split:
+```
+tcrenc-train --input ./testing/embeddings_cdr3_onehot.csv --output ./testing --embed_type onehot --decoder_train --split 0.8
+```
+
+Validate pretrained model on VDJdb (weights should be specified in configuration file):
+```
+tcrenc-validate --input VDJdb --output ./testing --embed_type onehot  
+```
+
+Make embeddings:
 ```{bash}
-python run.py --input ~/tcrenc/dataset/X_test.csv --output . --embed_type kidera --residual_block true
+tcrenc-run --input VDJdb --embed_type onehot --output ./testing
 ```
-After running this line you will get embeddings for cdr and epitope sequences by using model for kidera representations with Residual Blocks in architecture.
 
-## Format
-### Input
-The input file should be a csv file with a clear structure. It should have 2 columns named cdr3 and antigen_epitope. Each observation in these columns is a cdr or epitope sequence, respectively. 
-
-### Output
-After running our algorithms you will get embeddings of your sequences. The output format depends on the representation you choose.
-
-If you choose OneHot, you will get 2 files with embeddings for tcr and epitopе respectively. Note that for each sequence where will be $4*latent_dims$ features (Because of 4 variants for gap insertions).
-
-If you choose Kidera, you will get 2 files with embeddings for tcr and epitopе respectively. It is important to note that if you choose to use the Residual block (`residual_block true`), the file name will have the suffix `_residual` at the end. 
-## Final models
-
-Final models for one-hot representation could be find in `modules/modules_one-hot/autoencoder.py`.
-Weights could be found [here](https://github.com/antigenomics/tcrenc/tree/main/models/models_onehot)
-
-If you want to use weights for models using kidera factors - you need to have access to the aldan server.
+**Other Usage examples could be found [here]().**
 
 ## Results
-The results are divided into two folders based on representation. See the `results` folder.
 
-### One hot representation
-For the one-hot representation, a comparison of training efficiency was made based on reports generated in the relevant Jupyter notebook (see the `code` folder).
+This tool was used to train autoencoder models using **one-hot** and **Kidera factors** representations of the input sequences. The model architectures are described in the [Models section](). Pretrained weights for the **one-hot** autoencoder are also provided in this repository.
 
-For CDR3, it was shown that single linear transformations (SLT) of the one-hot matrix with a size of (21, 19) (reshaped into a one-dimensional vector) worked well with a latent space size of 64. We also observed that reducing the latent space to a lower dimension, for example, 32, required more complex neural network (NN) architectures, consisting of sequential linear transformations and ReLU activation functions.Two loss functions (MSE and cross-entropy) used in the autoencoder training process for CDR3 sequences were compared. It was demonstrated that the cross-entropy loss function performed approximately 2.5 times better in highly variable positions within CDR3 sequences.
+### One-hot model
+- CDR3 sequence reconstruction accuracy on VDJdb: **99.3%**
+- Antigen epitope sequence reconstruction accuracy on VDJdb: **99.9%**
+- Best binding predictor ROC AUC: **0.6456**
 
-#### VDJdb reconstruction
-Autoencoders showed very good performance in generating embeddings and reconstructing sequences on VDJdb.
-![reconstruction](https://github.com/antigenomics/tcrenc/blob/main/assets/val_onehot.png)
+### Kidera factors model
+- CDR3 sequence reconstruction accuracy on VDJdb: **47.5%**
+- Antigen epitope sequence reconstruction accuracy on VDJdb: **10.6%**
+- Best binding predictor ROC AUC: **0.6282**
 
-#### Affinity predictor
-The embeddings were used to train affinity predictors. The best model based on robust scaling, PCA transformation, and SVC achieved an ROC-AUC score of **0.65.**
-![roc](https://github.com/antigenomics/tcrenc/blob/main/assets/roc_onehot.png)
-
-### Kidera representation
-
-Kidera factors - Kidera factors are a set of ten numerical values that represent the physical properties of amino acids. These factors are useful for characterizing protein sequences and predicting their structural and functional properties.
-
-Our neural network model is a convolutional autoencoder that reduces the dimension of the original representation using sequential convolution operations. In this case, 3 convolutional layers and 2 linear layers are used. As a result, we get a latency space with a size of 64. Then, similarly, we can decode this latent space back into our representations. We concatenated the latent spaces obtained from the cdr sequence and epitope and used them to train a fully connected neural network. Also, in the course of this study, we used the Residual Block to possibly solve the problem of gradient attenuation and the fact that layers can interfere with each other, which causes the generalizing ability to decrease. However, this model showed a worse result than a conventional autoencoder.
-
-We got quite good results for a convolutional autoencoder without a Residual Block. 
-
-![roc-auc-kidera](https://github.com/antigenomics/tcrenc/blob/main/assets/roc-auc_kidera.png)
-
-The results with the Residual Block are slightly worse.
-
-![roc-auc-kidera-residual](https://github.com/antigenomics/tcrenc/blob/main/assets/roc-auc_kidera_resid.png)
-
-We also checked how well the autoencoder captures the sequence structure and individual amino acids. And here it also showed good results.
-
-![error](https://github.com/antigenomics/tcrenc/blob/main/assets/errors_cdr3.png)
-
-## Requirements and testings
-All requirements could be found in special folder `requirements`. 
-There are 2 different dependencies list: 
-- for One-Hot representation
-- for Kidera factors representation
-
-All scripts were tested on aldan3.itm-rsmu server. One-hot was also tested on MacBook Pro (M1 Pro).
-
-*Note: Pytorch now available only via `pip`. See [this](https://pytorch.org) for more details.*
 
 ## References
 Goncharov, M., Bagaev, D., Shcherbinin, D., Zvyagin, I., Bolotin, D., Thomas, P. G., Minervina, A. A., Pogorelyy, M. V., Ladell, K., McLaren, J. E., Price, D. A., Nguyen, T. H., Rowntree, L. C., Clemens, E. B., Kedzierska, K., Dolton, G., Rius, C. R., Sewell, A., Samir, J., … Shugay, M. (2022). VDJdb in the pandemic era: A compendium of T cell receptors specific for SARS-COV-2. Nature Methods, 19(9), 1017–1019. https://doi.org/10.1038/s41592-022-01578-0 

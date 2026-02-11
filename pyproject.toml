@@ -1,0 +1,34 @@
+[build-system]
+requires = ["hatchling", "hatch-requirements-txt"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tcrenc"
+version = "0.0.1"
+authors = [
+  { name="askomolov", email="askomolov@mail.ru" },
+  { name="BelyashMatvey", email="belyakov06mat@mail.ru" },
+  { name="vek239", email="elizaveta.k.vlasova@gmail.com" },
+  { name="mikessh", email="mikhail.shugay@gmail.com" },
+]
+description = "A tool to make TCR and atigene epitopes embeddings"
+readme = "README.md"
+keywords = [ "antigen", "t-cell", "receptor", "sequence", "embedding", "one-hot", "kidera factors"]
+requires-python = ">=3.11,<3.12"
+
+
+dynamic = ["dependencies"]
+[tool.hatch.metadata.hooks.requirements_txt]
+files = ["requirements.txt"]
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[project.urls]
+Homepage = "https://github.com/antigenomics/tcrenc"
+Issues = "https://github.com/antigenomics/tcrenc/issues"
+
+[project.scripts]
+tcrenc-run = "tcrenc.tcrenc_run:main"
+tcrenc-train = "tcrenc.tcrenc_train:main"
+tcrenc-validate = "tcrenc.tcrenc_validate:main"
+
