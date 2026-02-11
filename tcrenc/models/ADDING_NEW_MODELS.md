@@ -27,6 +27,7 @@ To index a new model, add its name to the `AV_EMBD_TYPE` list in [this Python fi
 - `load_model_for_train()`
 - `load_model_for_run()`
 - `load_model_for_validate()`
+
 so they can instantiate and load your model.
 
 
