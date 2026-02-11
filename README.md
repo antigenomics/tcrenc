@@ -36,12 +36,12 @@ All scripts support running a full autoencoder as well as using the encoder or d
 | `--cdr` | flag | No | Specify decoder sequence type as CDR3 (default: false) (Required if you use `--decoder` option) |
 | `--epitope` | flag | No | Specify decoder sequence type as epitope (default: false) (Required if you use `--decoder` option)|
 
-\* - "VDJdb" option fetches both CDR3 and antigen_epitope from database, filter it simultaneously and make final CSV file with paired sequences.
+\* - "VDJdb" option fetches both CDR3 and antigen_epitope from database, filter it simultaneously and separately make two final CSV files with sequences.
 
 ##### Input file format
 Input CSV file should contain "cdr3" or "antigen_epitope" columns.
 If both sequences types are present in input data they will be processed separately.
-All extra data are ignored.
+All extra data will be ignored.
 
 If `--decoder` option is used input CSV must contain only latent embeddings:
 * One sequence = one row
@@ -78,12 +78,11 @@ If `--decoder` option is used, CSV file with sequences will be produced.
 
 Input CSV file should contain "cdr3" or "antigen_epitope" columns.
 If both sequences types are presented in the input data they will be processed separately.
-All extra data will be omitted.
+All extra data will be ignored.
 
 ##### Output file format
 
-As output there will be weights for PyTorch models in `.pth`
-
+As output there will be files, which produced by model `save_model()` method. (Weights for PyTorch models (`.pth`) in presented models)
 
 #### `tcrenc-validate` - Validate model on input TCR or epitope sequences or on VDJdb
 
@@ -99,7 +98,7 @@ As output there will be weights for PyTorch models in `.pth`
 ##### Input file format
 Input CSV file should contain "cdr3" or "antigen_epitope" columns.
 If both sequences types are presented in the input data they will be processed separately.
-All extra data will be omitted.
+All extra data will be ignored.
 
 ##### Output file format
 As output there will be:
